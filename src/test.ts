@@ -61,6 +61,12 @@ describe('#createShell', () => {
         assert.equal(result, `/`);
     });
     
+    it('respects cd', () => {
+        sh.options.cwd = "/";
+        sh `cd tmp`;
+        assert.equal(sh.options.cwd, `/tmp`);
+    });
+    
     it('supports .test()', () => {
         const result2 = sh.test `exit 0`;
         assert.equal(result2, true);

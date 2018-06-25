@@ -20,16 +20,17 @@ interface ShellOptions extends SpawnSyncOptions {
 
 type ShellFunction<T> = (commands: TemplateStringsArray | string, ...commandVars: any[]) => T;
 
+export const sh = createShell();
+
 export function createShell(
     options: ShellOptions = {
-        encoding: "utf8",
-        stdio: [0, "pipe", "pipe"]
+        encoding: "utf8"
     }): Shell {
     let child: SpawnSyncReturns<string>;
 
     const exec = (overrideOptions: ShellOptions, commands, ...commandVars) => {
         const shellProcess = typeof options.shell === "string" ? options.shell : "/bin/bash";
-        const command = quote(commands, ...commandVars);
+        const command = quote(commands, ...commandVars) + `\n[ $? == 0 ] && echo -n $PWD>&3`
         const stringOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
         child = child_process.spawnSync(shellProcess, ["-c", command], stringOptions);
         if (child.error)
@@ -37,21 +38,23 @@ export function createShell(
         if (child.status)
             throw new Error((child.stderr ? child.stderr.toString() + "\n" : "")
                 + "Process exited with error code " + child.status);
-        return cleanShellOutput(child.stdout && child.stdout.toString());
+        if (child.output && child.output[3])
+            shell.options.cwd = child.output[3];
+        return cleanShellOutput(child.stdout && child.stdout.toString()) || "";
     };
     const cleanShellOutput = (output: string) => {
         return output && output.replace(/\n$/, "") || output;
     };
     const shell = Object.assign(
         (commands, ...commandVars) => {
-            return exec({stdio: [0, "inherit", "inherit"] }, commands, ...commandVars);
+            return exec({stdio: [0, "inherit", "inherit", "pipe"] }, commands, ...commandVars);
         },
         {
             get options() { return options },
             set options(value) { options = value },
             get child() { return child; },
             val: (commands, ...commandVars) => {
-                return exec({stdio: [0, "pipe", "pipe"] }, commands, ...commandVars);
+                return exec({stdio: [0, "pipe", "pipe", "pipe"] }, commands, ...commandVars);
             },
             vals: (commands, ...commandVars) => {
                 return shell.val(commands, ...commandVars).split(options.fieldSeperator || "\n");

@@ -7,17 +7,17 @@ Shell scripting for node.js.
 Use `sh` to run shell commands and print to stdout:
 
 ```
-import { createShell } from "shellsync";
-const sh = createShell();
-sh `echo foo`; // prints foo to console
+import { sh } from "shellsync";
+sh `cd /tmp`;
+sh `ls`;     // print file listing of /tmp to stdout
 ```
 
 Use `sh.val`, `sh.vals`, or `sh.json` to capture values:
 
 ```
-let v1 = sh.val `echo hello`;             // sets v1 to "hello"
-let v2 = sh.vals `ls`;                    // sets v2 to ["file1", "file2", ...]
-let v3 = sh.json `echo '{"foo": "bar"}'`; // sets v3 to {"foo": "bar"}
+let v1 = sh.val `echo hello`;             // set v1 to "hello"
+let v2 = sh.vals `ls`;                    // set v2 to ["file1", "file2", ...]
+let v3 = sh.json `echo '{"foo": "bar"}'`; // set v3 to {"foo": "bar"}
 ```
 
 Use `sh.test` to determine command success (by default, failure throws):
@@ -32,7 +32,7 @@ Template values are automatically quoted:
 
 ```
 let filename = "filename with spaces.txt";
-let result = sh.out `ls ${filename}`; // automatically adds quotes around filename and escapes "
+let contents = sh.val `cat ${filename}`; // ls filename\ with\ spaces.txt
 ```
 
 Use `unquoted()` to disable automatic quoting:
