@@ -29,7 +29,7 @@ export function createShell(
 
     const exec = (overrideOptions: ShellOptions, commands, ...commandVars) => {
         const shellProcess = typeof options.shell === "string" ? options.shell : "/bin/bash";
-        const command = escape(commands, ...commandVars);
+        const command = quote(commands, ...commandVars);
         const stringOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
         child = child_process.spawnSync(shellProcess, ["-c", command], stringOptions);
         if (child.error)
@@ -72,7 +72,7 @@ export function createShell(
     return shell;
 }
 
-export const escape: ShellFunction<string> = (commands, ...commandVars) => {
+export const quote: ShellFunction<string> = (commands, ...commandVars) => {
     if (!Array.isArray(commands))
         return [commands, ...commandVars].map(shellStringify).join(" ");
     return commands.map((command, i) => {
@@ -85,7 +85,7 @@ export const escape: ShellFunction<string> = (commands, ...commandVars) => {
 function shellStringify(arg: any): string {
     if (arg == null)
         return "''";
-    if (arg instanceof UnescapedParts)
+    if (arg instanceof UnquotedParts)
         return arg.toString();
     return shellEscape(stringify(arg));
 }
@@ -98,11 +98,11 @@ function stringify(arg: any): string {
     return "";
 }
 
-export function unescaped(...args: any[]) {
-    return new UnescapedParts(args);
+export function unquoted(...args: any[]) {
+    return new UnquotedParts(args);
 }
 
-class UnescapedParts {
+class UnquotedParts {
     constructor(private args: any[]) {}
 
     toString(): string {

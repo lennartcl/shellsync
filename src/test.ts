@@ -1,39 +1,39 @@
 import * as assert from "assert";
-import { createShell, escape, unescaped } from "./index";
+import { createShell, quote, unquoted } from "./index";
 
-describe('#escape', () => {
+describe('#quote', () => {
     it('supports strings without args', () => {
-        const escaped = escape(`foo "bar"`);
+        const escaped = quote(`foo "bar"`);
         assert.equal(escaped, `'foo "bar"'`);
     });
     
     it('supports strings without args in template form', () => {
-        const escaped = escape`foo "bar"`;
+        const escaped = quote`foo "bar"`;
         assert.equal(escaped, `foo "bar"`);
     });
     
     it('supports tagged templates', () => {
         const bar = "bar";
         const baz = '"baz"';
-        const escaped = escape`foo ${bar} ${baz}`;
+        const escaped = quote`foo ${bar} ${baz}`;
         assert.equal(escaped, `foo bar '"baz"'`);
     });
     
     it('supports string arguments', () => {
         const bar = "bar";
         const baz = '"baz"';
-        const escaped = escape("foo", bar, baz, null as any, undefined);
+        const escaped = quote("foo", bar, baz, null as any, undefined);
         assert.equal(escaped, `foo bar '"baz"' '' ''`);
     });
     
     it('supports unescaped arguments', () => {
         const args = "bar baz";
-        const escaped = escape`foo ${unescaped(args)} ${unescaped()}`;
+        const escaped = quote`foo ${unquoted(args)} ${unquoted()}`;
         assert.equal(escaped, `foo bar baz `);
     });
 
     it('supports falsy arguments', () => {
-        const escaped = escape`foo ${false} ${undefined} ${0}`;
+        const escaped = quote`foo ${false} ${undefined} ${0}`;
         assert.equal(escaped, `foo false '' 0`);
     });
 
@@ -42,7 +42,7 @@ describe('#escape', () => {
             opt?: string
         }
         const foo: Foo = { opt: "opt "};
-        escape `foo.opt = ${foo.opt}`
+        quote `foo.opt = ${foo.opt}`
     });
 });
 
