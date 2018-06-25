@@ -46,3 +46,10 @@ sh `ls; ${unquoted(command2)}`; // ls; echo foo
 ## License
 
 MIT.
+
+## See also
+
+* [shell-tag](https://www.npmjs.com/package/shell-tag) - Run shell commands with template strings
+* [shell-escape-tag](https://www.npmjs.com/package/shell-escape-tag) - Run shell commands with template strings and control over escaping
+* [any-shell-escape](https://www.npmjs.com/package/any-shell-escape) - Escape shell commands
+* [shelljs](https://www.npmjs.com/package/shelljs) - Portable implementation of Unix shell commands such as `echo` and `grep`
