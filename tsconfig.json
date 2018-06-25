@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "baseUrl": "src",
+        "module": "commonjs",
+        "sourceMap": true,
+        "moduleResolution": "node",
+        "inlineSources": true,
+        "strictNullChecks": true,
+        "paths": {
+            "*": [
+                "node_modules/*"
+            ]
+        }
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
