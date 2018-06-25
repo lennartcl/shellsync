@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------------------------
- *  Copyright (c) Lennart Kats.
+ *  Copyright (c) Lennart C. L. Kats.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *----------------------------------------------------------------------------------------------*/
 import * as shellEscape from "any-shell-escape";
@@ -13,6 +13,7 @@ interface Shell extends ShellFunction<string> {
     json: ShellFunction<any>;
     test: ShellFunction<string | boolean>;
 }
+
 interface ShellOptions extends SpawnSyncOptions {
     fieldSeperator?: string;
     encoding?: BufferEncoding;
@@ -47,14 +48,14 @@ export function createShell(
     };
     const shell = Object.assign(
         (commands, ...commandVars) => {
-            return exec({stdio: [0, "inherit", "inherit", "pipe"] }, commands, ...commandVars);
+            return exec({stdio: [0, "inherit", "inherit", "pipe"]}, commands, ...commandVars);
         },
         {
             get options() { return options },
             set options(value) { options = value },
             get child() { return child; },
             val: (commands, ...commandVars) => {
-                return exec({stdio: [0, "pipe", "pipe", "pipe"] }, commands, ...commandVars);
+                return exec({stdio: [0, "pipe", "pipe", "pipe"]}, commands, ...commandVars);
             },
             vals: (commands, ...commandVars) => {
                 return shell.val(commands, ...commandVars).split(options.fieldSeperator || "\n");

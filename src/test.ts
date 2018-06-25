@@ -54,7 +54,7 @@ describe('#createShell', () => {
         const result = sh.val `echo ${hoi}`;
         assert.equal(result, `"hoi"`);
     });
-    
+
     it('respects cwd', () => {
         sh.options.cwd = "/";
         const result = sh.val `echo $PWD`;

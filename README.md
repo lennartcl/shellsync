@@ -38,8 +38,9 @@ let contents = sh.val `cat ${filename}`; // ls filename\ with\ spaces.txt
 Use `unquoted()` to disable automatic quoting:
 
 ```
+import { unquoted } from "shellsync";
 let command2 = "echo foo";
-sh `ls; ${unquoted(command2)}`;
+sh `ls; ${unquoted(command2)}`; // ls; echo foo
 ```
 
 ## License
