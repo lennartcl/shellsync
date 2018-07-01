@@ -1,5 +1,6 @@
 import * as assert from "assert";
 import { createShell, quote, unquoted } from "./index";
+import defaultExportSh from "./index";
 
 describe('#quote', () => {
     it('supports strings without args', () => {
@@ -116,5 +117,15 @@ describe('#createShell', () => {
     it('supports sh.vals', () => {
         const result = sh.vals `echo "1\n2"`;
         assert.deepEqual(result, [1,2]);
+    });
+    
+    it('supports require("shellsync").sh', () => {
+        const sh = require("./index").sh;
+        sh(":");
+    });
+    
+    it('supports import *', () => {
+        assert.equal(typeof defaultExportSh, "function");
+        defaultExportSh(":");
     });
 });

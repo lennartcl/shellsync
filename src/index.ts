@@ -21,7 +21,11 @@ interface ShellOptions extends SpawnSyncOptions {
 
 type ShellFunction<T> = (commands: TemplateStringsArray | string, ...commandVars: any[]) => T;
 
-export const sh = createShell();
+const instance: Shell = createShell();
+
+export default instance;
+
+export const sh = instance;
 
 export function createShell(
     options: ShellOptions = {
@@ -66,8 +70,7 @@ export function createShell(
             test: (commands, ...commandVars) => {
                 try {
                     return shell.val(commands, ...commandVars) || true;
-                }
-                catch (e) {
+                } catch (e) {
                     return false;
                 }
             }
