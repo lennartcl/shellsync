@@ -4,12 +4,12 @@ Shell scripting for node.js.
 
 ## Examples
 
-Use `sh` to run shell commands and print to stdout:
+Use `sh` to synchronously run shell commands and print to stdout:
 
 ```
 import { sh } from "shellsync";
 sh `cd /tmp`;
-sh `ls`;     // print file listing of /tmp to stdout
+sh `ls`;      // print file listing of /tmp to stdout
 ```
 
 Use `sh.val`, `sh.vals`, or `sh.json` to capture values:
