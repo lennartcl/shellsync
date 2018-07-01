@@ -10,7 +10,7 @@ interface Shell extends ShellFunction<string> {
     options: SpawnOptions;
     val: ShellFunction<string>;
     vals: ShellFunction<string[]>;
-    json: ShellFunction<any>;
+    json: ShellFunction<any | null>;
     test: ShellFunction<string | boolean>;
 }
 
@@ -31,7 +31,7 @@ export function createShell(
 
     const exec = (overrideOptions: ShellOptions, commands, ...commandVars) => {
         const shellProcess = typeof options.shell === "string" ? options.shell : "/bin/bash";
-        const command = quote(commands, ...commandVars) + `\n[ $? == 0 ] && echo -n $PWD>&3`
+        const command = quote(commands, ...commandVars) + `\nRET=$?; echo -n "$PWD">&3; exit $RET`
         const stringOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
         child = child_process.spawnSync(shellProcess, ["-c", command], stringOptions);
         if (child.error)

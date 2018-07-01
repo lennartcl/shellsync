@@ -22,7 +22,7 @@ describe('#quote', () => {
     it('supports string arguments', () => {
         const bar = "bar";
         const baz = '"baz"';
-        const escaped = quote("foo", bar, baz, null as any, undefined);
+        const escaped = quote("foo", bar, baz, null, undefined);
         assert.equal(escaped, `foo bar '"baz"' '' ''`);
     });
     
@@ -72,6 +72,14 @@ describe('#createShell', () => {
         assert.equal(result2, true);
         const result1 = sh.test `exit 1`;
         assert.equal(result1, false);
+    });
+    
+    it('respects exit codes', () => {
+        try {
+            sh.test `exit 3`;
+        } catch (err) {
+            assert.equal(err.code, 3);
+        }
     });
     
     it('supports .test() with string values', () => {
