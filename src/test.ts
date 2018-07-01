@@ -104,6 +104,7 @@ describe('#createShell', () => {
         try {
             sh.val `dontexistsorry`;
         } catch (e) {
+            assert(e.code, e.stack);
             return;
         }
         throw new Error("Exception expected");

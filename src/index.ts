@@ -38,11 +38,15 @@ export function createShell(
         const command = quote(commands, ...commandVars) + `\nRET=$?; echo -n "$PWD">&3; exit $RET`
         const stringOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
         child = child_process.spawnSync(shellProcess, ["-c", command], stringOptions);
+        if (child.status) {
+            throw Object.assign(
+                new Error((child.stderr ? child.stderr.toString() + "\n" : "")
+                    + "Process exited with error code " + child.status),
+                { code: child.status }
+            );
+        }
         if (child.error)
             throw child.error;
-        if (child.status)
-            throw new Error((child.stderr ? child.stderr.toString() + "\n" : "")
-                + "Process exited with error code " + child.status);
         if (child.output && child.output[3])
             shell.options.cwd = child.output[3];
         return cleanShellOutput(child.stdout && child.stdout.toString()) || "";
