@@ -17,6 +17,7 @@ interface Shell extends ShellFunction<string> {
 interface ShellOptions extends SpawnSyncOptions {
     fieldSeperator?: string;
     encoding?: BufferEncoding;
+    stdio?: [any, any, any, any, any] | "pipe" | "inherit" | "ignore";
 }
 
 type ShellFunction<T> = (commands: TemplateStringsArray | string, ...commandVars: any[]) => T;
@@ -27,9 +28,10 @@ function createShell(
     }): Shell {
     let child: SpawnSyncReturns<string>;
 
-    const exec = (overrideOptions: ShellOptions, commands, ...commandVars) => {
+    const exec = (overrideOptions: ShellOptions & {replaceUnsafeLS?: boolean}, commands, ...commandVars) => {
+        const {replaceUnsafeLS} = overrideOptions;
         const shellProcess = typeof options.shell === "string" ? options.shell : "/bin/bash";
-        const command = quote(commands, ...commandVars) + `\nRET=$?; echo -n "$PWD">&3; exit $RET`
+        const command = wrapShellCommand(quote(commands, ...commandVars), {replaceUnsafeLS});
         const stringOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
         child = child_process.spawnSync(shellProcess, ["-c", command], stringOptions);
         if (child.status) {
@@ -43,23 +45,35 @@ function createShell(
             throw child.error;
         if (child.output && child.output[3])
             shell.options.cwd = child.output[3];
-        return cleanShellOutput(child.stdout && child.stdout.toString()) || "";
+        if (child.output && child.output[4])
+            console.warn(child.output[4]);
+        return child.stdout && child.stdout.toString() || "";
     };
     const cleanShellOutput = (output: string) => {
         return output && output.replace(/\n$/, "") || output;
     };
     const shell = Object.assign(
         (commands, ...commandVars) => {
-            return exec({stdio: [0, "inherit", "inherit", "pipe"]}, commands, ...commandVars);
+            return exec({stdio: [0, "inherit", "inherit", "pipe", "pipe"]}, commands, ...commandVars);
         },
         {
             get options() { return options },
             set options(value) { options = value },
             val: (commands, ...commandVars) => {
-                return exec({stdio: [0, "pipe", "pipe", "pipe"]}, commands, ...commandVars);
+                return cleanShellOutput(exec(
+                    {stdio: [0, "pipe", "pipe", "pipe", "pipe"]},
+                    commands,
+                    ...commandVars
+                ));
             },
             vals: (commands, ...commandVars) => {
-                return shell.val(commands, ...commandVars).split(options.fieldSeperator || "\n");
+                const result = exec(
+                    {stdio: [0, "pipe", "pipe", "pipe", "pipe"], replaceUnsafeLS: true},
+                    commands,
+                    ...commandVars
+                );
+                const defaultSeparator = result.slice(-1) === "\0" ? "\0" : "\n";
+                return result.substr(0, result.length-1).split(options.fieldSeperator || defaultSeparator);
             },
             json: (commands, ...commandVars) => {
                 return JSON.parse(shell.val(commands, ...commandVars));
@@ -113,6 +127,14 @@ class UnquotedParts {
         return this.args.map(stringify).join(" ");
     }
 }
+function wrapShellCommand(command: string, {replaceUnsafeLS}): string {
+    return `
+        ${replaceUnsafeLS ? `. ${__dirname}/lib_ls.sh` : ""}
+        ${command}
+        RET=$?; echo -n "$PWD">&3; exit $RET
+    `;
+}
+
 
 const shell = createShell();
 const sh = Object.assign(shell, {sh: shell, createShell, quote, unquoted, default: shell});

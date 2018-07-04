@@ -149,4 +149,52 @@ describe('#createShell', () => {
     it('supports plain string arguments', () => {
         assert.equal(sh.val("echo hi"), "hi");
     });
+});    
+
+describe(`#lib_ls`, () => {
+    let sh = createShell();
+
+    it('supports sh.vals("ls .")', () => {
+        let results: string[] = sh.vals`cd ${__dirname}; ls .`;
+        assert(results.length > 1, JSON.stringify(results));
+        assert(results.fill("test.ts"), JSON.stringify(results));
+    });
+
+    it('supports sh.vals("ls *")', () => {
+        let results: string[] = sh.vals`cd ${__dirname}; ls *`;
+        assert(results.length > 1, JSON.stringify(results));
+        assert(results.fill("test.ts"), JSON.stringify(results));
+    });
+    
+    it('supports sh.vals("ls test.ts")', () => {
+        let results: string[] = sh.vals`cd ${__dirname}; ls test.ts`;
+        assert(results.length === 1, JSON.stringify(results));
+    });
+    
+    it('supports sh.vals("ls src")', () => {
+        let results: string[] = sh.vals`cd ${__dirname}/..; ls src`;
+        assert(results.length > 1, JSON.stringify(results));
+    });
+    
+    it('supports sh.vals("ls DONT_EXIST")', () => {
+        let failed;
+        try {
+            let results: string[] = sh.vals`cd ${__dirname}; ls DONT_EXIST`;
+        } catch {
+            failed = true;
+        }
+        assert(failed);
+    });
+    
+    it('warns on unsafe uses of ls', () => {
+        const oldWarn = console.warn;
+        let warned;
+        console.warn = () => { warned = true; }
+        try {
+            let result: string[] = sh.vals`ls -l`;
+            assert(warned);
+        } finally {
+            console.warn = oldWarn;
+        }
+    });
 });
