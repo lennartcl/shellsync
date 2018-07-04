@@ -81,8 +81,8 @@ export function createShell(
 }
 
 export const quote: ShellFunction<string> = (commands, ...commandVars) => {
-    if (!Array.isArray(commands))
-        return [commands, ...commandVars].map(shellStringify).join(" ");
+    if (typeof commands === "string")
+        return [commands, ...commandVars.map(shellStringify)].join(" ");
     return commands.map((command, i) => {
         if (i === commands.length - 1)
             return command;

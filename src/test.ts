@@ -5,7 +5,7 @@ import defaultExportSh from "./index";
 describe('#quote', () => {
     it('supports strings without args', () => {
         const escaped = quote(`foo "bar"`);
-        assert.equal(escaped, `'foo "bar"'`);
+        assert.equal(escaped, `foo "bar"`);
     });
     
     it('supports strings without args in template form', () => {
@@ -44,6 +44,11 @@ describe('#quote', () => {
         }
         const foo: Foo = { opt: "opt "};
         quote `foo.opt = ${foo.opt}`
+    });
+
+    it('supports plain string arguments', () => {
+        const escaped = quote("echo hi");
+        assert.equal(escaped, "echo hi");
     });
 });
 
@@ -116,7 +121,7 @@ describe('#createShell', () => {
     });
     
     it('supports sh.vals', () => {
-        const result = sh.vals `echo "1\n2"`;
+        const result = sh.vals`echo "1\n2"`;
         assert.deepEqual(result, [1,2]);
     });
     
@@ -128,5 +133,9 @@ describe('#createShell', () => {
     it('supports import *', () => {
         assert.equal(typeof defaultExportSh, "function");
         defaultExportSh(":");
+    });
+    
+    it('supports plain string arguments', () => {
+        assert.equal(sh.val("echo hi"), "hi");
     });
 });
