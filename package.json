@@ -1,6 +1,6 @@
 {
   "name": "shellsync",
-  "version": "0.0.4-pre",
+  "version": "0.0.4",
   "main": "out/index.js",
   "license": "MIT",
   "author": "Lennart Kats <postcards add lennart.cl>",
