@@ -7,7 +7,7 @@ Shell scripting for node.js.
 Use `sh` to synchronously run shell commands and print to stdout:
 
 ```
-import { sh } from "shellsync";
+let sh = require("shellsync");
 sh `cd /tmp`;
 sh `ls`;      // print file listing of /tmp to stdout
 ```

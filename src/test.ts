@@ -1,6 +1,7 @@
 import * as assert from "assert";
 import { createShell, quote, unquoted } from "./index";
 import defaultExportSh from "./index";
+import { sh as shExport } from "./index";
 
 describe('#quote', () => {
     it('supports strings without args', () => {
@@ -130,9 +131,19 @@ describe('#createShell', () => {
         sh(":");
     });
     
+    it('supports require("shellsync")', () => {
+        const sh = require("./index");
+        sh(":");
+    });
+    
     it('supports import *', () => {
         assert.equal(typeof defaultExportSh, "function");
         defaultExportSh(":");
+    });
+    
+    it('supports import sh', () => {
+        assert.equal(typeof shExport, "function");
+        shExport(":");
     });
     
     it('supports plain string arguments', () => {

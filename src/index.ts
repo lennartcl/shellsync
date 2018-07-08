@@ -21,11 +21,7 @@ interface ShellOptions extends SpawnSyncOptions {
 
 type ShellFunction<T> = (commands: TemplateStringsArray | string, ...commandVars: any[]) => T;
 
-export const sh = createShell();
-
-export default sh;
-
-export function createShell(
+function createShell(
     options: ShellOptions = {
         encoding: "utf8"
     }): Shell {
@@ -80,7 +76,7 @@ export function createShell(
     return shell;
 }
 
-export const quote: ShellFunction<string> = (commands, ...commandVars) => {
+const quote: ShellFunction<string> = (commands, ...commandVars) => {
     if (typeof commands === "string")
         return [commands, ...commandVars.map(shellStringify)].join(" ");
     return commands.map((command, i) => {
@@ -106,7 +102,7 @@ function stringify(arg: any): string {
     return "";
 }
 
-export function unquoted(...args: any[]) {
+function unquoted(...args: any[]) {
     return new UnquotedParts(args);
 }
 
@@ -117,3 +113,8 @@ class UnquotedParts {
         return this.args.map(stringify).join(" ");
     }
 }
+
+const shell = createShell();
+const sh = Object.assign(shell, {sh: shell, createShell, quote, unquoted, default: shell});
+namespace sh {}
+export = sh;
