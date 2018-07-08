@@ -55,6 +55,10 @@ describe('#quote', () => {
 
 describe('#createShell', () => {
     let sh = createShell();
+
+    beforeEach(() => {
+        sh.reset();
+    });
     
     it('can echo', () => {
         const hoi = `"hoi"`;
@@ -148,5 +152,32 @@ describe('#createShell', () => {
     
     it('supports plain string arguments', () => {
         assert.equal(sh.val("echo hi"), "hi");
+    });
+    
+    it('supports mocks', () => {
+        sh.mock("git", `echo fake-git`);
+        assert.equal(sh.val`git`, "fake-git");
+    });
+    
+    it('supports pattern-based mocks', () => {
+        sh.mock("git foo", `echo git foo`);
+        assert.equal(sh.val`git foo`, "git foo");
+    });
+    
+    it('supports pattern-based mocks in order of specificity', () => {
+        sh.mock("git", `echo git`);
+        sh.mock("git ls", `echo git ls`);
+        sh.mock("foo bar", `echo foo bar`);
+        sh.mock("foo", `echo foo`);
+        assert.equal("git", `git`);
+        assert.equal("git ls", `git ls`);
+        assert.equal("foo bar", `foo bar`);
+        assert.equal("foo", `foo`);
+    });
+    
+    it('supports partial patterns for mocks', () => {
+        sh.mock("pwd mocked", `echo mocked`);
+        assert.equal(sh.val`cd /; pwd`, "/");
+        assert.equal(sh.val`cd /; pwd mocked`, "mocked");
     });
 });

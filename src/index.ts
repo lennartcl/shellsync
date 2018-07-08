@@ -12,6 +12,8 @@ interface Shell extends ShellFunction<string> {
     vals: ShellFunction<string[]>;
     json: ShellFunction<any | null>;
     test: ShellFunction<string | boolean>;
+    mock(sourceCommand: string, targetCommand: TemplateStringsArray | string, ...targetCommandVars: any[]);
+    reset(): void;
 }
 
 interface ShellOptions extends SpawnSyncOptions {
@@ -21,15 +23,23 @@ interface ShellOptions extends SpawnSyncOptions {
 
 type ShellFunction<T> = (commands: TemplateStringsArray | string, ...commandVars: any[]) => T;
 
+interface MockCommand {
+    name: string;
+    sourceCommand: string;
+    sourceCommandParts: number;
+    targetCommand: string;
+}
+
 function createShell(
     options: ShellOptions = {
         encoding: "utf8"
     }): Shell {
     let child: SpawnSyncReturns<string>;
+    let mocks: MockCommand[] = [];
 
     const exec = (overrideOptions: ShellOptions, commands, ...commandVars) => {
         const shellProcess = typeof options.shell === "string" ? options.shell : "/bin/bash";
-        const command = quote(commands, ...commandVars) + `\nRET=$?; echo -n "$PWD">&3; exit $RET`
+        const command = wrapShellCommand(quote(commands, ...commandVars), mocks);
         const stringOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
         child = child_process.spawnSync(shellProcess, ["-c", command], stringOptions);
         if (child.status) {
@@ -70,7 +80,19 @@ function createShell(
                 } catch (e) {
                     return false;
                 }
-            }
+            },
+            mock: (sourceCommand, targetCommand, ...targetCommandVars) => {
+                mocks.push({
+                    name: sourceCommand.split(" ")[0],
+                    sourceCommand: quote(sourceCommand),
+                    sourceCommandParts: sourceCommand.split(" ").length,
+                    targetCommand: quote(targetCommand, ...targetCommandVars),
+                });
+                mocks.sort((a, b) => b.sourceCommandParts - a.sourceCommandParts);
+            },
+            reset: () => {
+                mocks = [];
+            },
         }
     );
     return shell;
@@ -112,6 +134,32 @@ class UnquotedParts {
     toString(): string {
         return this.args.map(stringify).join(" ");
     }
+}
+
+function wrapShellCommand(command: string, mocks: MockCommand[]) {
+    return `
+        # Mock definitions
+        __execMock() {
+            case "$@" in
+            ${mocks.map(m => `
+                ${shellStringify(m.sourceCommand)}) ${m.targetCommand} ;;
+            `)}
+            *) command "$@" ;;
+            esac
+        }
+        export -f __execMock
+
+        # Functions to intercept mocked commands
+        ${mocks.map(m => `
+            ${m.name}() { __execMock ${m.name} "$@"; }
+            export -f ${m.name}
+        `)}
+
+        ${command}
+
+        # Capture current directory
+        RET=$?; echo -n "$PWD">&3; exit $RET
+    `;
 }
 
 const shell = createShell();
