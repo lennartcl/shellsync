@@ -57,7 +57,7 @@ describe('#createShell', () => {
     let sh = createShell();
 
     beforeEach(() => {
-        sh.reset();
+        sh.mockRestore();
     });
     
     it('can echo', () => {
