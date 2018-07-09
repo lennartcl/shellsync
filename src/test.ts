@@ -175,9 +175,14 @@ describe('#createShell', () => {
         assert.equal("foo", `foo`);
     });
     
-    it('supports partial patterns for mocks', () => {
+    it('only captures specific patterns for mocks', () => {
         sh.mock("pwd mocked", `echo mocked`);
         assert.equal(sh.val`cd /; pwd`, "/");
         assert.equal(sh.val`cd /; pwd mocked`, "mocked");
+    });
+    
+    it('supports partial patterns for mocks', () => {
+        sh.mock("pwd mocked", `echo mocked`);
+        assert.equal(sh.val`cd /; pwd mocked bla bla`, "mocked");
     });
 });
