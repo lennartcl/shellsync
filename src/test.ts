@@ -185,4 +185,9 @@ describe('#createShell', () => {
         sh.mock("pwd mocked", `echo mocked`);
         assert.equal(sh.val`cd /; pwd mocked bla bla`, "mocked");
     });
+    
+    it('supports $1 in mocks', () => {
+        sh.mock("git", `echo git-$1`);
+        assert.equal(sh.val`git status`, "git-status");
+    });
 });

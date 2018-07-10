@@ -142,7 +142,7 @@ function wrapShellCommand(command: string, mocks: MockCommand[]) {
         __execMock() {
             case "$@" in
             ${mocks.map(m => `
-                ${shellStringify(m.sourceCommand)}*) ${m.targetCommand} ;;
+                ${shellStringify(m.sourceCommand)}*) shift; ${m.targetCommand} ;;
             `)}
             *) command "$@" ;;
             esac
