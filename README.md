@@ -1,13 +1,18 @@
 # shellsync
 
-Shell scripting for node.js.
+Shell scripting for Node.js.
 
-## Examples
+* Easy: write shell scripts using synchronous code.
+* Powerful: use JavaScript or TypeScript functions, modules, and libraries.
+* Safe: use variables in shell scripts with safe, automatic escaping.
+* Robust: test your code with mocks and standard testing frameworks like Mocha or Jest.
+
+## Basics
 
 Use `sh` to synchronously run shell commands and print to stdout:
 
 ```
-let sh = require("shellsync");
+const sh = require("shellsync");
 sh `cd /tmp`;
 sh `ls`;      // print file listing of /tmp to stdout
 ```
@@ -16,7 +21,7 @@ Use `sh.val`, `sh.vals`, or `sh.json` to capture values:
 
 ```
 let v1 = sh.val `echo hello`;             // set v1 to "hello"
-let v2 = sh.vals `ls`;                    // set v2 to ["file1", "file2", ...]
+let v2 = sh.vals `lsof -t -i :8080`;      // set v2 to all process ids listening on port 8080
 let v3 = sh.json `echo '{"foo": "bar"}'`; // set v3 to {"foo": "bar"}
 ```
 
@@ -27,6 +32,8 @@ if (!sh.test `which node`) {
     throw new Error("Node is not on the path!");
 }
 ```
+
+## Using JavaScript variables
 
 Template values are automatically quoted:
 
@@ -41,6 +48,31 @@ Use `unquoted()` to disable automatic quoting:
 import { unquoted } from "shellsync";
 let command2 = "echo foo";
 sh `ls; ${unquoted(command2)}`; // ls; echo foo
+```
+
+## Writing tests
+
+Test your shellsync scripts using mocking and standard testing frameworks such as Mocha or Jest.
+
+Use `sh.mock(command, targetCommand)` to mock shell command patterns such as "git", "git log",
+or "git status". The most specific mock will win.
+
+Use `sh.restoreMocks()` to restore all mocked commands to the original shell command.
+
+Example Mocha test:
+
+```
+const sh = require("shellsync");
+
+it("mocks git status", () => {
+    sh.mock("git status", `echo git status called`);
+    assert.equal(sh.val `git foo`, "git status called");
+});
+
+it("mocks arbitrary git command", () => {
+    sh.mock("git", `echo git command called: $1`);
+    assert.equal(sh.val `git foo`, "git command called: foo");
+});
 ```
 
 ## License
