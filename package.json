@@ -1,13 +1,13 @@
 {
   "name": "shellsync",
-  "version": "0.0.5-pre",
-  "main": "out/index.js",
+  "version": "0.0.5",
+  "main": "dist/index.js",
   "license": "MIT",
   "author": "Lennart Kats <postcards add lennart.cl>",
   "description": "",
   "repository": {
     "type": "git",
-    "url": "git://github.com/lennartcl/sh.git"
+    "url": "git://github.com/lennartcl/shellsync.git"
   },
   "engines": {
     "node": ">=0.11"
@@ -32,7 +32,7 @@
     "typescript": "^2.6.2"
   },
   "scripts": {
-    "build": "tsc --outDir out",
+    "build": "tsc --declaration --outDir dist",
     "test": "mocha --require ts-node/register src/test.ts",
     "prepublish": "npm run build && npm run test"
   }
