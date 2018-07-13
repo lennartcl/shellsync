@@ -17,6 +17,10 @@
     "typescript",
     "shell",
     "shellscripting",
+    "bash",
+    "testing",
+    "mocks",
+    "mocking",
     "batch",
     "command-line",
     "synchronous"

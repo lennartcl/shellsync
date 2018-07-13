@@ -54,8 +54,8 @@ sh `ls; ${unquoted(command2)}`; // ls; echo foo
 
 Test your shellsync scripts using mocking and standard testing frameworks such as Mocha or Jest.
 
-Use `sh.mock(command, targetCommand)` to mock shell command patterns such as "git", "git log",
-or "git status". The most specific mock wins.
+Use `sh.mock(command, targetCommand)` to mock shell command patterns such as `git`, `git log`,
+or `git status`. The most specific mock wins.
 
 Use `sh.restoreMocks()` to restore all mocked commands to the original shell command.
 
