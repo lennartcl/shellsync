@@ -12,7 +12,7 @@ interface Shell extends ShellFunction<string> {
     vals: ShellFunction<string[]>;
     json: ShellFunction<any | null>;
     test: ShellFunction<string | boolean>;
-    mock(sourceCommand: string, targetCommand?: TemplateStringsArray | string, ...targetCommandVars: any[]);
+    mock(sourceCommand: string, targetCommand?: TemplateStringsArray | string, ...targetCommandVars: any[]): void;
     mockRestore(): void;
 }
 
