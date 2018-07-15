@@ -32,7 +32,8 @@ interface MockCommand {
 
 function createShell(
     options: ShellOptions = {
-        encoding: "utf8"
+        encoding: "utf8",
+        maxBuffer: 200 * 1024,
     }): Shell {
     let child: SpawnSyncReturns<string>;
     let mocks: MockCommand[] = [];
