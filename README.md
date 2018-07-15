@@ -7,7 +7,7 @@ Shell scripting for Node.js.
 * Safe: use variables in shell scripts with safe, automatic escaping.
 * Robust: test your code with support for mocking and standard testing frameworks such as Mocha or Jest.
 
-## Basics
+## Usage
 
 Use `sh` to synchronously run shell commands and print to stdout:
 
@@ -33,7 +33,7 @@ if (!sh.test `which node`) {
 }
 ```
 
-## Using JavaScript variables
+### Using JavaScript variables
 
 Template values are automatically quoted:
 
@@ -50,7 +50,7 @@ let command2 = "echo foo";
 sh `ls; ${unquoted(command2)}`; // ls; echo foo
 ```
 
-## Writing tests
+### Writing tests
 
 Test your shellsync scripts using mocking and standard testing frameworks such as Mocha or Jest.
 
@@ -76,6 +76,52 @@ it("mocks arbitrary git command", () => {
     assert.equal(sh.val `git foo`, "git command called: foo");
 });
 ```
+
+## API
+
+### sh \`command\`: void
+
+Execute a command.
+
+### sh.test \`command\`: boolean
+
+Execute a command, return true in case of success.
+
+### sh.val \`command\`: string
+
+Execute a command, return stdout.
+
+### sh.vals \`command\`: string[]
+
+Execute a command, return stdout split by null characters (if found) or by newline characters.
+Use `sh.options.fieldSeperator` to pick a custom delimiter character.
+
+### sh.mock(pattern, [\`command\`]): void
+
+Define a mock: instead of `pattern`, run `command`.
+Patterns consist of one or more words and support globbing from the second word, e.g.
+`git`, `git status`, `git s*`. The most specific pattern is used in case multiple
+mocks are defined.
+
+### sh.mockRestore(): void
+
+Remove all mocks.
+
+### sh.quote \`command\`: string
+
+Similar to `sh`, but return the command that would be executed.
+
+### sh.unquoted(...args): UnquotedPart
+
+Create an unquoted part of a `command` template.
+
+### sh.options: SpawnSyncOptions
+
+See [the options for child_process](https://nodejs.org/api/child_process.html#child_process_child_process_spawnsync_command_args_options).
+
+### sh.options.fieldSeperator: string
+
+The delimiter used for `sh.vals`.
 
 ## License
 

@@ -111,7 +111,7 @@ const quote: ShellFunction<string> = (commands, ...commandVars) => {
 function shellStringify(arg: any): string {
     if (arg == null)
         return "''";
-    if (arg instanceof UnquotedParts)
+    if (arg instanceof UnquotedPart)
         return arg.toString();
     return shellEscape(stringify(arg));
 }
@@ -125,10 +125,10 @@ function stringify(arg: any): string {
 }
 
 function unquoted(...args: any[]) {
-    return new UnquotedParts(args);
+    return new UnquotedPart(args);
 }
 
-class UnquotedParts {
+class UnquotedPart {
     constructor(private args: any[]) {}
 
     toString(): string {
