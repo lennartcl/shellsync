@@ -12,7 +12,7 @@ interface Shell extends ShellFunction<string> {
     vals: ShellFunction<string[]>;
     json: ShellFunction<any | null>;
     test: ShellFunction<string | boolean>;
-    mock(sourceCommand: string, targetCommand: TemplateStringsArray | string, ...targetCommandVars: any[]);
+    mock(sourceCommand: string, targetCommand?: TemplateStringsArray | string, ...targetCommandVars: any[]);
     mockRestore(): void;
 }
 
@@ -86,7 +86,7 @@ function createShell(
                     name: sourceCommand.split(" ")[0],
                     sourceCommand: quote(sourceCommand),
                     sourceCommandParts: sourceCommand.split(" ").length,
-                    targetCommand: quote(targetCommand, ...targetCommandVars),
+                    targetCommand: quote(targetCommand || "", ...targetCommandVars),
                 });
                 mocks.sort((a, b) => b.sourceCommandParts - a.sourceCommandParts);
             },

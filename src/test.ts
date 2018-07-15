@@ -190,4 +190,9 @@ describe('#createShell', () => {
         sh.mock("git", `echo git-$1`);
         assert.equal(sh.val`git status`, "git-status");
     });
+    
+    it('supports empty mocks', () => {
+        sh.mock("git");
+        assert.equal(sh.val`git status`, "");
+    });
 });
