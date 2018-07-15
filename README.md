@@ -2,10 +2,10 @@
 
 Shell scripting for Node.js.
 
-* Easy: write shell scripts using synchronous code.
+* Pragmatic: automate tasks using synchronous code and with familiar commands from the command line.
 * Powerful: use JavaScript or TypeScript functions, modules, and libraries.
 * Safe: use variables in shell scripts with safe, automatic escaping.
-* Robust: test your code with mocks and standard testing frameworks like Mocha or Jest.
+* Robust: test your code with support for mocking and standard testing frameworks such as Mocha or Jest.
 
 ## Basics
 
@@ -55,7 +55,7 @@ sh `ls; ${unquoted(command2)}`; // ls; echo foo
 Test your shellsync scripts using mocking and standard testing frameworks such as Mocha or Jest.
 
 Use `sh.mock(command, targetCommand)` to mock shell command patterns such as "git", "git log",
-or "git status". The most specific mock will win.
+or "git status". The most specific mock wins.
 
 Use `sh.restoreMocks()` to restore all mocked commands to the original shell command.
 
@@ -64,9 +64,11 @@ Example Mocha test:
 ```
 const sh = require("shellsync");
 
+beforeEach(() => sh.mockRestore());
+
 it("mocks git status", () => {
     sh.mock("git status", `echo git status called`);
-    assert.equal(sh.val `git foo`, "git status called");
+    assert.equal(sh.val `git status`, "git status called");
 });
 
 it("mocks arbitrary git command", () => {
