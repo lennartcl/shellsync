@@ -5,7 +5,7 @@ import { sh as shExport } from "./index";
 
 describe('#quote', () => {
     it('supports strings without args', () => {
-        const escaped = quote(`foo "bar"`);
+        const escaped = quote(`foo "bar"` as any);
         assert.equal(escaped, `foo "bar"`);
     });
     
@@ -24,7 +24,7 @@ describe('#quote', () => {
     it('supports string arguments', () => {
         const bar = "bar";
         const baz = '"baz"';
-        const escaped = quote("foo", bar, baz, null, undefined);
+        const escaped = quote("foo" as any, bar, baz, null, undefined);
         assert.equal(escaped, `foo bar '"baz"' '' ''`);
     });
     
@@ -48,7 +48,7 @@ describe('#quote', () => {
     });
 
     it('supports plain string arguments', () => {
-        const escaped = quote("echo hi");
+        const escaped = quote("echo hi" as any);
         assert.equal(escaped, "echo hi");
     });
 });
@@ -142,16 +142,16 @@ describe('#createShell', () => {
     
     it('supports import *', () => {
         assert.equal(typeof defaultExportSh, "function");
-        defaultExportSh(":");
+        defaultExportSh `:`;
     });
     
     it('supports import sh', () => {
         assert.equal(typeof shExport, "function");
-        shExport(":");
+        shExport `:`;
     });
     
     it('supports plain string arguments', () => {
-        assert.equal(sh.val("echo hi"), "hi");
+        assert.equal(sh.val("echo hi" as any), "hi");
     });
     
     it('supports mocks', () => {

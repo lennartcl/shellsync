@@ -2,17 +2,19 @@
  *  Copyright (c) Lennart C. L. Kats.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *----------------------------------------------------------------------------------------------*/
-import * as shellEscape from "any-shell-escape";
 import * as child_process from "child_process";
 import { SpawnOptions, SpawnSyncReturns, SpawnSyncOptionsWithStringEncoding, SpawnSyncOptions } from "child_process";
+const shellEscape = require("any-shell-escape");
 
-interface Shell extends ShellFunction<string> {
-    options: SpawnOptions;
+interface Shell extends ShellProperties, ShellFunction<void> {}
+
+interface ShellProperties {
+    options: ShellOptions;
     val: ShellFunction<string>;
     vals: ShellFunction<string[]>;
     json: ShellFunction<any | null>;
     test: ShellFunction<string | boolean>;
-    mock(sourceCommand: string, targetCommand?: TemplateStringsArray | string, ...targetCommandVars: any[]): void;
+    mock(sourceCommand: string, targetCommand?: string): void;
     mockRestore(): void;
 }
 
@@ -21,7 +23,12 @@ interface ShellOptions extends SpawnSyncOptions {
     encoding?: BufferEncoding;
 }
 
-type ShellFunction<T> = (commands: TemplateStringsArray | string, ...commandVars: any[]) => T;
+type TemplateError = "<<< Please invoke using template literal syntax, e.g. sh `command`;";
+
+type ShellFunction<T> = (
+    commands: TemplateStringsArray | TemplateError,
+    ...commandVars: any[]
+) => T;
 
 interface MockCommand {
     name: string;
@@ -30,15 +37,11 @@ interface MockCommand {
     targetCommand: string;
 }
 
-function createShell(
-    options: ShellOptions = {
-        encoding: "utf8",
-        maxBuffer: 200 * 1024,
-    }): Shell {
+function createShell(options: ShellOptions = {encoding: "utf8", maxBuffer: 200 * 1024}): Shell {
     let child: SpawnSyncReturns<string>;
     let mocks: MockCommand[] = [];
 
-    const exec = (overrideOptions: ShellOptions, commands, ...commandVars) => {
+    const exec = (overrideOptions: ShellOptions, commands: TemplateStringsArray | TemplateError, ...commandVars: any[]) => {
         const shellProcess = typeof options.shell === "string" ? options.shell : "/bin/bash";
         const command = wrapShellCommand(quote(commands, ...commandVars), mocks);
         const stringOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
@@ -47,7 +50,7 @@ function createShell(
             throw Object.assign(
                 new Error((child.stderr ? child.stderr.toString() + "\n" : "")
                     + "Process exited with error code " + child.status),
-                { code: child.status }
+                {code: child.status}
             );
         }
         if (child.error)
@@ -59,44 +62,42 @@ function createShell(
     const cleanShellOutput = (output: string) => {
         return output && output.replace(/\n$/, "") || output;
     };
-    const shell = Object.assign(
-        (commands, ...commandVars) => {
-            return exec({stdio: [0, "inherit", "inherit", "pipe"]}, commands, ...commandVars);
+    const shell: ShellProperties = {
+        get options() { return options },
+        set options(value) { options = value },
+        val: (commands, ...commandVars) => {
+            return exec({stdio: [0, "pipe", "pipe", "pipe"]}, commands, ...commandVars);
         },
-        {
-            get options() { return options },
-            set options(value) { options = value },
-            val: (commands, ...commandVars) => {
-                return exec({stdio: [0, "pipe", "pipe", "pipe"]}, commands, ...commandVars);
-            },
-            vals: (commands, ...commandVars) => {
-                return shell.val(commands, ...commandVars).split(options.fieldSeperator || "\n");
-            },
-            json: (commands, ...commandVars) => {
-                return JSON.parse(shell.val(commands, ...commandVars));
-            },
-            test: (commands, ...commandVars) => {
-                try {
-                    return shell.val(commands, ...commandVars) || true;
-                } catch (e) {
-                    return false;
-                }
-            },
-            mock: (sourceCommand, targetCommand, ...targetCommandVars) => {
-                mocks.push({
-                    name: sourceCommand.split(" ")[0],
-                    sourceCommand: quote(sourceCommand),
-                    sourceCommandParts: sourceCommand.split(" ").length,
-                    targetCommand: quote(targetCommand || "", ...targetCommandVars),
-                });
-                mocks.sort((a, b) => b.sourceCommandParts - a.sourceCommandParts);
-            },
-            mockRestore: () => {
-                mocks = [];
-            },
-        }
-    );
-    return shell;
+        vals: (commands, ...commandVars) => {
+            return shell.val(commands, ...commandVars).split(options.fieldSeperator || "\n");
+        },
+        json: (commands, ...commandVars) => {
+            return JSON.parse(shell.val(commands, ...commandVars));
+        },
+        test: (commands, ...commandVars) => {
+            try {
+                return shell.val(commands, ...commandVars) || true;
+            } catch (e) {
+                return false;
+            }
+        },
+        mock: (sourceCommand, targetCommand) => {
+            mocks.push({
+                name: sourceCommand.split(" ")[0],
+                sourceCommand,
+                sourceCommandParts: sourceCommand.split(" ").length,
+                targetCommand: targetCommand || "",
+            });
+            mocks.sort((a, b) => b.sourceCommandParts - a.sourceCommandParts);
+        },
+        mockRestore: () => {
+            mocks = [];
+        },
+    };
+    const sh: ShellFunction<void> = (commands, ...commandVars) => {
+        exec({stdio: [0, "inherit", "inherit", "pipe"]}, commands, ...commandVars);
+    };
+    return Object.assign(sh, shell);
 }
 
 const quote: ShellFunction<string> = (commands, ...commandVars) => {
