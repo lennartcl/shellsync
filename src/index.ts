@@ -3,39 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *----------------------------------------------------------------------------------------------*/
 import * as child_process from "child_process";
-import { SpawnOptions, SpawnSyncReturns, SpawnSyncOptionsWithStringEncoding, SpawnSyncOptions } from "child_process";
+import {SpawnSyncReturns, SpawnSyncOptionsWithStringEncoding} from "child_process";
+import {Shell, ShellFunction, MockCommand, ShellOptions, TemplateError, ShellProperties} from "./types";
 const shellEscape = require("any-shell-escape");
-
-interface Shell extends ShellProperties, ShellFunction<void> {}
-
-interface ShellProperties {
-    options: ShellOptions;
-    val: ShellFunction<string>;
-    vals: ShellFunction<string[]>;
-    json: ShellFunction<any | null>;
-    test: ShellFunction<string | boolean>;
-    mock(sourceCommand: string, targetCommand?: string): void;
-    mockRestore(): void;
-}
-
-interface ShellOptions extends SpawnSyncOptions {
-    fieldSeperator?: string;
-    encoding?: BufferEncoding;
-}
-
-type TemplateError = "<<< Please invoke using template literal syntax, e.g. sh `command`;";
-
-type ShellFunction<T> = (
-    commands: TemplateStringsArray | TemplateError,
-    ...commandVars: any[]
-) => T;
-
-interface MockCommand {
-    name: string;
-    sourceCommand: string;
-    sourceCommandParts: number;
-    targetCommand: string;
-}
 
 function createShell(options: ShellOptions = {encoding: "utf8", maxBuffer: 200 * 1024}): Shell {
     let child: SpawnSyncReturns<string>;
@@ -77,7 +47,7 @@ function createShell(options: ShellOptions = {encoding: "utf8", maxBuffer: 200 *
         test: (commands, ...commandVars) => {
             try {
                 return shell.val(commands, ...commandVars) || true;
-            } catch (e) {
+            } catch {
                 return false;
             }
         },
@@ -165,6 +135,15 @@ function wrapShellCommand(command: string, mocks: MockCommand[]) {
 }
 
 const shell = createShell();
-const sh = Object.assign(shell, {sh: shell, createShell, quote, unquoted, default: shell});
+const sh = Object.assign(
+    shell,
+    {
+        sh: shell,
+        createShell,
+        quote,
+        unquoted,
+        default: shell,
+    }
+);
 namespace sh {}
 export = sh;
