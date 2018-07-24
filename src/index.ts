@@ -105,7 +105,7 @@ function stringify(arg: any): string {
     return "";
 }
 
-const unquoted = (...args: any[]): any => {
+const unquoted = (...args: any[]): Object => {
     return new UnquotedPart(args);
 }
 

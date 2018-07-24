@@ -6,11 +6,13 @@ export interface ShellProperties {
     options: ShellOptions;
     val: ShellFunction<string>;
     vals: ShellFunction<string[]>;
-    json: ShellFunction<any | null>;
+    json: ShellFunction<JSON>;
     test: ShellFunction<string | boolean>;
     mock(pattern: string, command?: string): void;
     mockRestore(): void;
 }
+
+type JSON = Object | string | number | boolean | null;
 
 export interface ShellOptions extends SpawnSyncOptions {
     fieldSeperator?: string;
