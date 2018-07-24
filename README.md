@@ -36,6 +36,13 @@ if (!sh.test `which node`) {
 }
 ```
 
+Use `shh` to run commands without printing anything to stdout or stderr:
+
+```
+const {shh} = require("shellsync");
+shh `git init`;
+```
+
 ### Using JavaScript variables
 
 Template values are automatically quoted:
@@ -125,6 +132,10 @@ See [the options for child_process](https://nodejs.org/api/child_process.html#ch
 ### sh.options.fieldSeperator: string
 
 The delimiter used for `sh.vals`.
+
+### shh \`command\`: void
+
+Execute a command. Don't print anything to stdout or stderr.
 
 ## License
 

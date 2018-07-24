@@ -1,7 +1,8 @@
 import * as assert from "assert";
-import { createShell, quote, unquoted } from "./index";
+import {createShell, quote, unquoted} from "./index";
 import defaultExportSh from "./index";
-import { sh as shExport } from "./index";
+import {sh as shExport} from "./index";
+import {shh} from "./index";
 
 describe('#quote', () => {
     it('supports strings without args', () => {
@@ -194,5 +195,9 @@ describe('#createShell', () => {
     it('supports glob-based mocks', () => {
         sh.mock("git *");
         assert.equal(sh.val`git status`, "");
+    });
+    
+    it('supports ssh', () => {
+        shh`echo silence is gold`;
     });
 });

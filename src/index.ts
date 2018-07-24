@@ -144,10 +144,12 @@ function wrapShellCommand(command: string, mocks: MockCommand[]) {
 }
 
 const shell = createShell();
+const silentShell = createShell({stdio: [0, "pipe", "pipe", "pipe"]});
 const sh = Object.assign(
     shell,
     {
         sh: shell,
+        shh: silentShell,
         createShell,
         quote,
         unquoted,
