@@ -36,7 +36,8 @@
     "typescript": "^2.6.2"
   },
   "scripts": {
-    "build": "tsc --declaration --outDir dist",
+    "build": "tsc --declaration --outDir dist && npm run build-sanity-check",
+    "build-sanity-check": "tsc --declaration dist/index.d.ts",
     "test": "mocha --require ts-node/register src/test.ts",
     "test-watch": "mocha --require ts-node/register --watch --watch-extensions ts src/test.ts",
     "prepublish": "npm run build && npm run test"

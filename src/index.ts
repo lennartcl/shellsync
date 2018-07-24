@@ -7,7 +7,7 @@ import {SpawnSyncReturns, SpawnSyncOptionsWithStringEncoding} from "child_proces
 import {Shell, ShellFunction, MockCommand, ShellOptions, TemplateError, ShellProperties} from "./types";
 const shellEscape = require("any-shell-escape");
 
-function createShell(options: ShellOptions = {encoding: "utf8", maxBuffer: 200 * 1024}): Shell {
+const createShell = (options: ShellOptions = {encoding: "utf8", maxBuffer: 200 * 1024}): Shell => {
     let child: SpawnSyncReturns<string>;
     let mocks: MockCommand[] = [];
 
@@ -100,7 +100,7 @@ function stringify(arg: any): string {
     return "";
 }
 
-function unquoted(...args: any[]) {
+const unquoted = (...args: any[]): any => {
     return new UnquotedPart(args);
 }
 
