@@ -73,8 +73,10 @@ function createShell(options: ShellOptions = {encoding: "utf8", maxBuffer: 200 *
 }
 
 const quote: ShellFunction<string> = (commands, ...commandVars) => {
-    if (typeof commands === "string")
+    if (typeof commands === "string") {
+        console.warn("Warning: shellsync function invoked using string argument; please invoke using template literal syntax, e.g. sh `command`;")
         return [commands, ...commandVars.map(shellStringify)].join(" ");
+    }
     return commands.map((command, i) => {
         if (i === commands.length - 1)
             return command;

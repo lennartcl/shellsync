@@ -132,12 +132,12 @@ describe('#createShell', () => {
     
     it('supports require("shellsync").sh', () => {
         const sh = require("./index").sh;
-        sh(":");
+        sh `:`;
     });
     
     it('supports require("shellsync")', () => {
         const sh = require("./index");
-        sh(":");
+        sh `:`;
     });
     
     it('supports import *', () => {
