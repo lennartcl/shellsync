@@ -5,6 +5,7 @@
 import * as child_process from "child_process";
 import {SpawnSyncReturns, SpawnSyncOptionsWithStringEncoding} from "child_process";
 import {Shell, ShellFunction, MockCommand, ShellOptions, TemplateError, ShellProperties} from "./types";
+import {existsSync} from "fs";
 const shellEscape = require("any-shell-escape");
 
 const createShell = (options: ShellOptions = {encoding: "utf8", maxBuffer: 200 * 1024}): Shell => {
@@ -22,6 +23,10 @@ const createShell = (options: ShellOptions = {encoding: "utf8", maxBuffer: 200 *
                     + "Process exited with error code " + child.status),
                 {code: child.status}
             );
+        }
+        if (child.error && (child.error as any).code === "ENOENT" && stringOptions.cwd && !existsSync(stringOptions.cwd)) {
+            child.error.message = `cwd does not exist: ${stringOptions.cwd}`;
+            throw child.error;
         }
         if (child.error)
             throw child.error;
