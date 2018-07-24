@@ -17,6 +17,9 @@ sh `cd /tmp`;
 sh `ls`;      // print file listing of /tmp to stdout
 ```
 
+Note how the above uses ES6 [tagged template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals),
+calling the `sh` function without parentheses. This makes the invocations slightly shorter allows shellsync to safely quote any values passed to it.
+
 Use `sh.val`, `sh.vals`, or `sh.json` to capture values:
 
 ```
@@ -54,8 +57,8 @@ sh `ls; ${unquoted(command2)}`; // ls; echo foo
 
 Test your shellsync scripts using mocking and standard testing frameworks such as Mocha or Jest.
 
-Use `sh.mock(command, targetCommand)` to mock shell command patterns such as `git`, `git log`,
-or `git status`. The most specific mock wins.
+Use `sh.mock(command, targetCommand)` to mock shell command using [globs](https://mywiki.wooledge.org/glob)
+such as `git log`, `git status`, or `git *`. The shortest pattern wins.
 
 Use `sh.restoreMocks()` to restore all mocked commands to the original shell command.
 
@@ -72,7 +75,7 @@ it("mocks git status", () => {
 });
 
 it("mocks arbitrary git command", () => {
-    sh.mock("git", `echo git command called: $1`);
+    sh.mock("git *", `echo git command called: $1`);
     assert.equal(sh.val `git foo`, "git command called: foo");
 });
 ```

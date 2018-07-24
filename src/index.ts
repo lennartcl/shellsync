@@ -51,14 +51,16 @@ function createShell(options: ShellOptions = {encoding: "utf8", maxBuffer: 200 *
                 return false;
             }
         },
-        mock: (sourceCommand, targetCommand) => {
+        mock: (pattern, command) => {
+            if (pattern.match(/([\\"')(\n\r\$!`&<>])/))
+                throw new Error("Illegal character in pattern: " + RegExp.$1);
             mocks.push({
-                name: sourceCommand.split(" ")[0],
-                sourceCommand,
-                sourceCommandParts: sourceCommand.split(" ").length,
-                targetCommand: targetCommand || "",
+                name: pattern.split(" ")[0],
+                pattern: pattern.replace(/\s/g, "\\ "),
+                patternLength: pattern.replace(/\*$/, "").length,
+                command: command || "",
             });
-            mocks.sort((a, b) => b.sourceCommandParts - a.sourceCommandParts);
+            mocks.sort((a, b) => b.patternLength - a.patternLength);
         },
         mockRestore: () => {
             mocks = [];
@@ -114,7 +116,7 @@ function wrapShellCommand(command: string, mocks: MockCommand[]) {
         __execMock() {
             case "$@" in
             ${mocks.map(m => `
-                ${shellStringify(m.sourceCommand)}*) shift; ${m.targetCommand} ;;
+                ${m.pattern}) shift; ${m.command} ;;
             `)}
             *) command "$@" ;;
             esac

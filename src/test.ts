@@ -165,10 +165,10 @@ describe('#createShell', () => {
     });
     
     it('supports pattern-based mocks in order of specificity', () => {
-        sh.mock("git", `echo git`);
+        sh.mock("git *", `echo git`);
         sh.mock("git ls", `echo git ls`);
         sh.mock("foo bar", `echo foo bar`);
-        sh.mock("foo", `echo foo`);
+        sh.mock("foo *", `echo foo`);
         assert.equal("git", `git`);
         assert.equal("git ls", `git ls`);
         assert.equal("foo bar", `foo bar`);
@@ -182,17 +182,17 @@ describe('#createShell', () => {
     });
     
     it('supports partial patterns for mocks', () => {
-        sh.mock("pwd mocked", `echo mocked`);
+        sh.mock("pwd mocked *", `echo mocked`);
         assert.equal(sh.val`cd /; pwd mocked bla bla`, "mocked");
     });
     
     it('supports $1 in mocks', () => {
-        sh.mock("git", `echo git-$1`);
+        sh.mock("git *", `echo git-$1`);
         assert.equal(sh.val`git status`, "git-status");
     });
     
-    it('supports empty mocks', () => {
-        sh.mock("git");
+    it('supports glob-based mocks', () => {
+        sh.mock("git *");
         assert.equal(sh.val`git status`, "");
     });
 });

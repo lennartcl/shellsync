@@ -8,7 +8,7 @@ export interface ShellProperties {
     vals: ShellFunction<string[]>;
     json: ShellFunction<any | null>;
     test: ShellFunction<string | boolean>;
-    mock(sourceCommand: string, targetCommand?: string): void;
+    mock(pattern: string, command?: string): void;
     mockRestore(): void;
 }
 
@@ -26,7 +26,7 @@ export type ShellFunction<T> = (
 
 export interface MockCommand {
     name: string;
-    sourceCommand: string;
-    sourceCommandParts: number;
-    targetCommand: string;
+    pattern: string;
+    patternLength: number;
+    command: string;
 }
