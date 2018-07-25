@@ -133,6 +133,10 @@ See [the options for child_process](https://nodejs.org/api/child_process.html#ch
 
 The delimiter used for `sh.vals`.
 
+### sh(options): Shell
+
+Return a shell with specific options assigned. See `sh.options`. Example use: `sh({input: "stdin input"})\`cat > file.txt\``.
+
 ### shh \`command\`: void
 
 Execute a command. Don't print anything to stdout or stderr.

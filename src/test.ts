@@ -1,7 +1,7 @@
 import * as assert from "assert";
-import {createShell, quote, unquoted} from "./index";
+import {quote, unquoted} from "./index";
 import defaultExportSh from "./index";
-import {sh as shExport} from "./index";
+import {sh} from "./index";
 import {shh} from "./index";
 
 describe('#quote', () => {
@@ -55,8 +55,6 @@ describe('#quote', () => {
 });
 
 describe('#createShell', () => {
-    let sh = createShell();
-
     beforeEach(() => {
         sh.mockRestore();
     });
@@ -146,9 +144,13 @@ describe('#createShell', () => {
         defaultExportSh `:`;
     });
     
-    it('supports import sh', () => {
-        assert.equal(typeof shExport, "function");
-        shExport `:`;
+    it('supports creating new shells using sh()', () => {
+        assert.equal(sh.options.input, undefined);
+        let sh1 = sh({"input": "1"});
+        let sh2 = sh({"input": "2"});
+        assert.equal(sh.options.input, undefined);
+        assert.equal(sh1.options.input, "1");
+        assert.equal(sh2.options.input, "2");
     });
     
     it('supports plain string arguments', () => {
@@ -200,4 +202,8 @@ describe('#createShell', () => {
     it('supports ssh', () => {
         shh`echo silence is gold`;
     });
+
+    it("supports standard input", () => {
+        assert.equal(sh({input: "hello"}).val`cat`, "hello");
+    })
 });

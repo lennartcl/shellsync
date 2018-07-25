@@ -4,7 +4,7 @@
  *----------------------------------------------------------------------------------------------*/
 import * as child_process from "child_process";
 import {SpawnSyncReturns, SpawnSyncOptionsWithStringEncoding} from "child_process";
-import {Shell, ShellFunction, MockCommand, ShellOptions, TemplateError, ShellProperties} from "./types";
+import {Shell, ShellFunction, MockCommand, ShellOptions, TemplateError, ShellProperties, CreateShellFunction} from "./types";
 import {existsSync} from "fs";
 const shellEscape = require("any-shell-escape");
 
@@ -16,6 +16,8 @@ const createShell = (options: ShellOptions = {encoding: "utf8", maxBuffer: 200 *
         const shellProcess = typeof options.shell === "string" ? options.shell : "/bin/bash";
         const command = wrapShellCommand(quote(commands, ...commandVars), mocks);
         const stringOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
+        if (stringOptions.input)
+            stringOptions.stdio = ["pipe", ...stringOptions.stdio.slice(1)];
         child = child_process.spawnSync(shellProcess, ["-c", command], stringOptions);
         if (child.status) {
             throw Object.assign(
@@ -74,7 +76,15 @@ const createShell = (options: ShellOptions = {encoding: "utf8", maxBuffer: 200 *
     const sh: ShellFunction<void> = (commands, ...commandVars) => {
         exec({stdio: [0, "inherit", "inherit", "pipe"]}, commands, ...commandVars);
     };
-    return Object.assign(sh, shell);
+    const cloneShell: CreateShellFunction = (overrideOptions) => {
+        return createShell(Object.assign({}, options, overrideOptions));
+    };
+    const overloadedShell: ShellFunction<void> & CreateShellFunction = (arg: any, ...args: any[]): any => {
+        if (arg.length)
+            return sh(arg, ...args);
+        return cloneShell(arg);
+    }
+    return Object.assign(overloadedShell, shell);
 }
 
 const quote: ShellFunction<string> = (commands, ...commandVars) => {
@@ -150,7 +160,6 @@ const sh = Object.assign(
     {
         sh: shell,
         shh: silentShell,
-        createShell,
         quote,
         unquoted,
         default: shell,
