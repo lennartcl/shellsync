@@ -6,6 +6,7 @@ import * as child_process from "child_process";
 import {SpawnSyncReturns, SpawnSyncOptionsWithStringEncoding} from "child_process";
 import {Shell, ShellFunction, MockCommand, ShellOptions, TemplateError, ShellProperties, CreateShellFunction} from "./types";
 import {existsSync} from "fs";
+import {handleSignals, handleSignalsEnd, parseEmittedSignal, wrapDisableInterrupts, isHandleSignalsActive} from "./handle_signals";
 const shellEscape = require("any-shell-escape");
 const metaStream = 3;
 
@@ -23,13 +24,16 @@ const createShell = (options: ShellOptions = {}): Shell => {
         let command = quote(commands, ...commandVars);
         if (options.debug) command = wrapDebug(command);
         command = wrapShellCommand(command, mocks);
+        if (isHandleSignalsActive()) command = wrapDisableInterrupts(command);
         
         const stringOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
         if (stringOptions.input)
             stringOptions.stdio = ["pipe", ...stringOptions.stdio.slice(1)];
         child = child_process.spawnSync(shellProcess, ["-c", command], stringOptions);
         
-        if (child.output && child.output[metaStream])
+        if (child.output && child.output[metaStream][0] === "\0")
+            parseEmittedSignal(child.output[metaStream].substr(1));
+        else if (child.output && child.output[metaStream])
             shell.options.cwd = child.output[metaStream];
         if (options.debug && child.stderr)
             console.error(cleanShellOutput(child.stderr));
@@ -86,6 +90,8 @@ const createShell = (options: ShellOptions = {}): Shell => {
         mockRestore: () => {
             mocks = [];
         },
+        handleSignals,
+        handleSignalsEnd,
     };
     const sh: ShellFunction<void> = (commands, ...commandVars) => {
         exec({}, commands, ...commandVars);

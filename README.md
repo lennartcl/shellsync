@@ -106,6 +106,26 @@ Execute a command, return stdout.
 Execute a command, return stdout split by null characters (if found) or by newline characters.
 Use `sh.options.fieldSeperator` to pick a custom delimiter character.
 
+#### sh.handleSignals(): void
+
+Disable processing of SIGINT/TERM/QUIT signals. Also, process any pending signals.
+
+Typical usage:
+
+```
+sh.handleSignals();
+// Don't accept Control-C for these commands
+sh`command1`;
+sh`command2`;
+sh.handleSignals(); // handle any pending Control-C interrupts
+sh`command3`;
+sh.handleSignalsEnd(); // restore normal Control-C behavior
+```
+
+#### sh.handleSignalsEnd(): void
+
+Re-enable processing of SIGINT/TERM/QUIT signals. Also, process any pending signals.
+
 #### sh.mock(pattern, [\`command\`]): void
 
 Define a mock: instead of `pattern`, run `command`.
