@@ -93,57 +93,57 @@ it("mocks arbitrary git command", () => {
 
 Execute a command.
 
-### sh.test \`command\`: boolean
+#### sh.test \`command\`: boolean
 
 Execute a command, return true in case of success.
 
-### sh.val \`command\`: string
+#### sh.val \`command\`: string
 
 Execute a command, return stdout.
 
-### sh.vals \`command\`: string[]
+#### sh.vals \`command\`: string[]
 
 Execute a command, return stdout split by null characters (if found) or by newline characters.
 Use `sh.options.fieldSeperator` to pick a custom delimiter character.
 
-### sh.mock(pattern, [\`command\`]): void
+#### sh.mock(pattern, [\`command\`]): void
 
 Define a mock: instead of `pattern`, run `command`.
 Patterns consist of one or more words and support globbing from the second word, e.g.
 `git`, `git status`, `git s*`. The most specific pattern is used in case multiple
 mocks are defined.
 
-### sh.mockRestore(): void
+#### sh.mockRestore(): void
 
 Remove all mocks.
 
-### sh.quote \`command\`: string
+#### sh.quote \`command\`: string
 
 Similar to `sh`, but return the command that would be executed.
 
-### sh.unquoted(...args): UnquotedPart
+#### sh.unquoted(...args): UnquotedPart
 
 Create an unquoted part of a `command` template.
 
-### sh.options: SpawnSyncOptions
+#### sh.options: SpawnSyncOptions
 
 See [the options for child_process](https://nodejs.org/api/child_process.html#child_process_child_process_spawnsync_command_args_options).
 
-### sh.options.debug: boolean
+##### sh.options.debug: boolean
 
 Run in debug mode, printing commands that are executed.
 
-### sh.options.fieldSeperator: string
+##### sh.options.fieldSeperator: string
 
 The delimiter used for `sh.vals`.
 
-### sh(options): Shell
+##### sh(options): Shell
 
 Return a shell with specific options assigned. See `sh.options`. Example use: `sh({input: "stdin input"})\`cat > file.txt\``.
 
 ### shh \`command\`: void
 
-Execute a command. Don't print anything to stdout or stderr.
+Same as sh, but by default doesn't print anything to stdout or stderr.
 
 ## License
 
