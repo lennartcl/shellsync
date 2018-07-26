@@ -17,6 +17,7 @@ type JSON = Object | string | number | boolean | null;
 export interface ShellOptions extends SpawnSyncOptions {
     fieldSeperator?: string;
     encoding?: BufferEncoding;
+    debug?: boolean;
 }
 
 export type TemplateError = "<<< Please invoke using template literal syntax, e.g. sh `command`;";

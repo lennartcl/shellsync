@@ -202,6 +202,30 @@ describe('#createShell', () => {
     it('supports ssh', () => {
         shh`echo silence is gold`;
     });
+    
+    it('supports options.debug', () => {
+        sh.options.debug = true;
+        sh`echo "let's get loud"`;
+        sh.options.debug = false;
+    });
+    
+    it('supports options.debug for shh', () => {
+        shh.options.debug = true;
+        shh`echo "let's get loud"; echo "like, very loud">&2`;
+        shh.options.debug = false;
+    });
+    
+    it('reports syntax errors', (next) => {
+        try {
+            sh.val`echo let's get errors`;
+        }
+        catch (e) {
+            assert.equal(e.code, 2);
+            assert(e.message.match(/Error: Process exited with error code 2/), e.message);
+            assert(e.message.match(/unexpected EOF/), e.message);
+            next()
+        }
+    });
 
     it("supports standard input", () => {
         assert.equal(sh({input: "hello"}).val`cat`, "hello");

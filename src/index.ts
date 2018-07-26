@@ -7,22 +7,37 @@ import {SpawnSyncReturns, SpawnSyncOptionsWithStringEncoding} from "child_proces
 import {Shell, ShellFunction, MockCommand, ShellOptions, TemplateError, ShellProperties, CreateShellFunction} from "./types";
 import {existsSync} from "fs";
 const shellEscape = require("any-shell-escape");
+const metaStream = 3;
 
-const createShell = (options: ShellOptions = {encoding: "utf8", maxBuffer: 200 * 1024}): Shell => {
+const createShell = (options: ShellOptions = {}): Shell => {
+    options.encoding = options.encoding || "utf8";
+    options.maxBuffer = options.maxBuffer || 200 * 1024;
+    options.stdio = options.stdio || [0, "inherit", "inherit", "pipe"];
+
     let child: SpawnSyncReturns<string>;
     let mocks: MockCommand[] = [];
 
     const exec = (overrideOptions: ShellOptions, commands: TemplateStringsArray | TemplateError, ...commandVars: any[]) => {
         const shellProcess = typeof options.shell === "string" ? options.shell : "/bin/bash";
-        const command = wrapShellCommand(quote(commands, ...commandVars), mocks);
+        
+        let command = quote(commands, ...commandVars);
+        if (options.debug) command = wrapDebug(command);
+        command = wrapShellCommand(command, mocks);
+        
         const stringOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
         if (stringOptions.input)
             stringOptions.stdio = ["pipe", ...stringOptions.stdio.slice(1)];
         child = child_process.spawnSync(shellProcess, ["-c", command], stringOptions);
+        
+        if (child.output && child.output[metaStream])
+            shell.options.cwd = child.output[metaStream];
+        if (options.debug && child.stderr)
+            console.error(cleanShellOutput(child.stderr));
+
         if (child.status) {
             throw Object.assign(
-                new Error((child.stderr ? child.stderr.toString() + "\n" : "")
-                    + "Process exited with error code " + child.status),
+                new Error((child.stderr ? child.stderr + "\n" : "")
+                    + "Error: Process exited with error code " + child.status),
                 {code: child.status}
             );
         }
@@ -32,13 +47,12 @@ const createShell = (options: ShellOptions = {encoding: "utf8", maxBuffer: 200 *
         }
         if (child.error)
             throw child.error;
-        if (child.output && child.output[3])
-            shell.options.cwd = child.output[3];
         return cleanShellOutput(child.stdout && child.stdout.toString()) || "";
     };
     const cleanShellOutput = (output: string) => {
         return output && output.replace(/\n$/, "") || output;
     };
+
     const shell: ShellProperties = {
         get options() { return options },
         set options(value) { options = value },
@@ -74,7 +88,7 @@ const createShell = (options: ShellOptions = {encoding: "utf8", maxBuffer: 200 *
         },
     };
     const sh: ShellFunction<void> = (commands, ...commandVars) => {
-        exec({stdio: [0, "inherit", "inherit", "pipe"]}, commands, ...commandVars);
+        exec({}, commands, ...commandVars);
     };
     const cloneShell: CreateShellFunction = (overrideOptions) => {
         return createShell(Object.assign({}, options, overrideOptions));
@@ -149,8 +163,12 @@ function wrapShellCommand(command: string, mocks: MockCommand[]) {
         ${command}
 
         # Capture current directory
-        RET=$?; echo -n "$PWD">&3; exit $RET
+        RET=$?; echo -n "$PWD">&${metaStream}; exit $RET
     `;
+}
+
+function wrapDebug(command: string) {
+    return `(set -x\n${command}\n)`;
 }
 
 const shell = createShell();
@@ -158,7 +176,9 @@ const silentShell = createShell({stdio: [0, "pipe", "pipe", "pipe"]});
 const sh = Object.assign(
     shell,
     {
+        /** Execute a command. */
         sh: shell,
+        /** Execute a command. Don't print anything to stdout or stderr. */
         shh: silentShell,
         quote,
         unquoted,
