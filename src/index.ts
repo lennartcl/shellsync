@@ -27,12 +27,12 @@ const createShell = (options: ShellOptions = {}): Shell => {
         if (isHandleSignalsActive()) command = wrapDisableInterrupts(command);
         
         const stringOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
-        if (stringOptions.input)
+        if (stringOptions.input != null)
             stringOptions.stdio = ["pipe", ...stringOptions.stdio.slice(1)];
         child = child_process.spawnSync(shellProcess, ["-c", command], stringOptions);
         
         if (child.output && child.output[metaStream][0] === "\0")
-            parseEmittedSignal(child.output[metaStream].substr(1));
+            parseEmittedSignal(child.output[metaStream]);
         else if (child.output && child.output[metaStream])
             shell.options.cwd = child.output[metaStream];
         if (options.debug && child.stderr)

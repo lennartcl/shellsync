@@ -29,7 +29,6 @@ export function handleSignalsEnd() {
     process.removeListener("SIGINT", handleSignalInt);
     process.removeListener("SIGQUIT", handleSignalQuit);
     process.removeListener("SIGTERM", handleSignalTerm);
-    console.log("sendin", signalReceived)
     if (signalReceived) process.kill(process.pid, signalReceived);
 }
 
@@ -40,7 +39,7 @@ export function isHandleSignalsActive() {
 
 /** @internal */
 export function parseEmittedSignal(signal: string) {
-    const match = signal.match(/^(SIGINT|SIGQUIT|SIGTERM)/);
+    const match = signal.match(/^\0(SIGINT|SIGQUIT|SIGTERM)/);
     signalReceived = match && match[1] || signalReceived;
 }
 

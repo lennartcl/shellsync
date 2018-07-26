@@ -4,8 +4,8 @@ Shell scripting for Node.js.
 
 * Pragmatic: automate tasks using synchronous code and with familiar commands from the command line.
 * Powerful: use JavaScript or TypeScript functions, modules, and libraries.
-* Safe: use variables in shell scripts with safe, automatic escaping.
-* Robust: test your code with support for mocking and standard testing frameworks such as Mocha or Jest.
+* Robust: use uninterruptable critical sections and harden your code with standard testing frameworks and mocking.
+* Safe: use automatic, safe variable escaping.
 
 ## Usage
 
@@ -43,7 +43,7 @@ const {shh} = require("shellsync");
 shh `git init`;
 ```
 
-### Using JavaScript variables
+### Safe variable escaping
 
 Template values are automatically quoted:
 
@@ -87,6 +87,30 @@ it("mocks arbitrary git command", () => {
 });
 ```
 
+### Uninterruptable critical sections
+
+Users can press Control-C in CLI programs, which means they can end Node.js and shell scripts
+at _any given statement_. Control-C interrupts and related signals can leave a script
+in an undefined state. In Node.js, Control-C even ends a program ignoring any `finally`
+clauses that you might use for cleanup.
+
+Use `sh.handleSignals()` for critical sections of code where these signals should be
+temporarily ignored:
+
+```
+sh.handleSignals(); // begin critical section
+
+sh `command1`;
+sh `command2`;
+sh.handleSignals(); // handle any pending signals by calling handleSignals() again
+sh `command3`;
+sh `command4`;
+
+sh.handleSignalsEnd(); // end critical section
+```
+
+Note that `sh.handleSignals()` affects both shell and Node code.
+
 ## API
 
 ### sh \`command\`: void
@@ -106,21 +130,13 @@ Execute a command, return stdout.
 Execute a command, return stdout split by null characters (if found) or by newline characters.
 Use `sh.options.fieldSeperator` to pick a custom delimiter character.
 
+#### sh.json \`command\`: any
+
+Execute a command, parse the result as JSON.
+
 #### sh.handleSignals(): void
 
 Disable processing of SIGINT/TERM/QUIT signals. Also, process any pending signals.
-
-Typical usage:
-
-```
-sh.handleSignals();
-// Don't accept Control-C for these commands
-sh`command1`;
-sh`command2`;
-sh.handleSignals(); // handle any pending Control-C interrupts
-sh`command3`;
-sh.handleSignalsEnd(); // restore normal Control-C behavior
-```
 
 #### sh.handleSignalsEnd(): void
 
