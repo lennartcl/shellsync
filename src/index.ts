@@ -26,10 +26,11 @@ const createShell = (options: ShellOptions = {}): Shell => {
         command = wrapShellCommand(command, mocks);
         if (isHandleSignalsActive()) command = wrapDisableInterrupts(command);
         
-        const stringOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
-        if (stringOptions.input != null)
-            stringOptions.stdio = ["pipe", ...stringOptions.stdio.slice(1)];
-        child = child_process.spawnSync(shellProcess, ["-c", command], stringOptions);
+        const childOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
+        if (childOptions.input != null)
+            childOptions.stdio = ["pipe", ...childOptions.stdio.slice(1)];
+
+        child = child_process.spawnSync(shellProcess, ["-c", command], childOptions);
         
         if (child.output && child.output[metaStream][0] === "\0")
             parseEmittedSignal(child.output[metaStream]);
@@ -45,8 +46,8 @@ const createShell = (options: ShellOptions = {}): Shell => {
                 {code: child.status}
             );
         }
-        if (child.error && (child.error as any).code === "ENOENT" && stringOptions.cwd && !existsSync(stringOptions.cwd)) {
-            child.error.message = `cwd does not exist: ${stringOptions.cwd}`;
+        if (child.error && (child.error as any).code === "ENOENT" && childOptions.cwd && !existsSync(childOptions.cwd)) {
+            child.error.message = `cwd does not exist: ${childOptions.cwd}`;
             throw child.error;
         }
         if (child.error)
@@ -99,9 +100,8 @@ const createShell = (options: ShellOptions = {}): Shell => {
     const cloneShell: CreateShellFunction = (overrideOptions) => {
         return createShell(Object.assign({}, options, overrideOptions));
     };
-    const overloadedShell: ShellFunction<void> & CreateShellFunction = (arg: any, ...args: any[]): any => {
-        if (arg.length)
-            return sh(arg, ...args);
+    const overloadedShell: ShellFunction<void> & CreateShellFunction = (arg: any = {}, ...args: any[]): any => {
+        if (arg.length) return sh(arg, ...args);
         return cloneShell(arg);
     }
     return Object.assign(overloadedShell, shell);

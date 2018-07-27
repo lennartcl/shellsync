@@ -227,7 +227,14 @@ describe('#createShell', () => {
         }
     });
 
+    it("supports sh without any arguments", () => {
+        const shell = sh();
+        shell.val`:`;
+    });
+
     it("supports standard input", () => {
-        assert.equal(sh({input: "hello"}).val`cat`, "hello");
+        const input = "hello";
+        const output = sh({input}).val`cat`;
+        assert.equal(output, input);
     })
 });
