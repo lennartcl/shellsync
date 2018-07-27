@@ -236,5 +236,18 @@ describe('#createShell', () => {
         const input = "hello";
         const output = sh({input}).val`cat`;
         assert.equal(output, input);
+    });
+
+    it("supports standard input with read", () => {
+        const input = "hello";
+        const output = sh({input}).val`read -p "prompt"; echo $REPLY`;
+        assert.equal(output, input);
     })
+
+    it("supports standard input with read and handleSignals()", () => {
+        sh.handleSignals();
+        const input = "hello";
+        const output = sh({input}).val`read -p "prompt "; echo $REPLY`;
+        assert.equal(output, input);
+    });
 });

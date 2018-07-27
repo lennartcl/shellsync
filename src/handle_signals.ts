@@ -54,7 +54,7 @@ export function wrapDisableInterrupts(script: string) {
         trap "printf '\\0SIGINT'>&3; trap : INT" INT
         trap "printf '\\0SIGQUIT'>&3; trap : QUIT" QUIT
         trap "printf '\\0SIGQUIT'>&3; trap : TERM" TERM
-        $SHELL -c ${shellEscape(script)} &
+        $SHELL -c ${shellEscape(script)} </dev/stdin &
         while ! wait; do :; done
     `;
 }
