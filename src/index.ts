@@ -54,9 +54,6 @@ const createShell = (options: ShellOptions = {}): Shell => {
             throw child.error;
         return cleanShellOutput(child.stdout && child.stdout.toString()) || "";
     };
-    const cleanShellOutput = (output: string) => {
-        return output && output.replace(/\n$/, "") || output;
-    };
 
     const shell: ShellProperties = {
         get options() { return options },
@@ -94,17 +91,11 @@ const createShell = (options: ShellOptions = {}): Shell => {
         handleSignals,
         handleSignalsEnd,
     };
-    const sh: ShellFunction<void> = (commands, ...commandVars) => {
-        exec({}, commands, ...commandVars);
+    const execOrCreateShell: ShellFunction<string> & CreateShellFunction = (arg: any = {}, ...commandVars: any[]): any => {
+        if (arg.length) return exec({}, arg, ...commandVars);
+        return createShell(Object.assign({}, options, arg));
     };
-    const cloneShell: CreateShellFunction = (overrideOptions) => {
-        return createShell(Object.assign({}, options, overrideOptions));
-    };
-    const overloadedShell: ShellFunction<void> & CreateShellFunction = (arg: any = {}, ...args: any[]): any => {
-        if (arg.length) return sh(arg, ...args);
-        return cloneShell(arg);
-    }
-    return Object.assign(overloadedShell, shell);
+    return Object.assign(execOrCreateShell, shell);
 }
 
 const quote: ShellFunction<string> = (commands, ...commandVars) => {
@@ -118,6 +109,10 @@ const quote: ShellFunction<string> = (commands, ...commandVars) => {
         return command + shellStringify(commandVars[i]);
     }).join("");
 }
+
+function cleanShellOutput(output: string) {
+    return output && output.replace(/\n$/, "") || output;
+};
 
 function shellStringify(arg: any): string {
     if (arg == null)
