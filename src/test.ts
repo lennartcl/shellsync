@@ -168,14 +168,18 @@ describe('#createShell', () => {
     });
     
     it('supports pattern-based mocks in order of specificity', () => {
-        sh.mock("git *", `echo git`);
+        sh.mock("git", `echo git`);
+        sh.mock("git *", `echo git x`);
         sh.mock("git ls", `echo git ls`);
         sh.mock("foo bar", `echo foo bar`);
-        sh.mock("foo *", `echo foo`);
-        assert.equal("git", `git`);
-        assert.equal("git ls", `git ls`);
-        assert.equal("foo bar", `foo bar`);
-        assert.equal("foo", `foo`);
+        sh.mock("foo *", `echo foo x`);
+        sh.mock("foo", `echo foo`);
+        assert.equal(sh.val`git`, `git`);
+        assert.equal(sh.val`git x`, `git x`);
+        assert.equal(sh.val`git ls`, `git ls`);
+        assert.equal(sh.val`foo bar`, `foo bar`);
+        assert.equal(sh.val`foo x`, `foo x`);
+        assert.equal(sh.val`foo`, `foo`);
     });
     
     it('only captures specific patterns for mocks', () => {

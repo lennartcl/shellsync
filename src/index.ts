@@ -154,7 +154,7 @@ function wrapShellCommand(command: string, mocks: MockCommand[]) {
                       ${m.command}
                     )
                     ;;
-            `)}
+            `).join("\n")}
             *) command "$@" ;;
             esac
         }
@@ -164,7 +164,7 @@ function wrapShellCommand(command: string, mocks: MockCommand[]) {
         ${mocks.map(m => `
             ${m.name}() { __execMock ${m.name} "$@"; }
             export -f ${m.name}
-        `)}
+        `).join("\n")}
 
         ${command}
 
