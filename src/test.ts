@@ -243,6 +243,27 @@ describe('#createShell', () => {
             next()
         }
     });
+    
+    it('reports syntax errors for sh.json', (next) => {
+        try {
+            sh.json`echo let's get json`;
+        }
+        catch (e) {
+            assert.equal(e.code, 2);
+            assert(e.message.match(/Error: Process exited with error code 2/), e.message);
+            assert(e.message.match(/unexpected EOF/), e.message);
+            next()
+        }
+    });
+    
+    it('reports syntax errors for mocks early at declaration time', (next) => {
+        try {
+            sh.mock("json", `echo {"method:"foo","params":"ola"}`);
+        }
+        catch (e) {
+            next()
+        }
+    });
 
     it("supports sh without any arguments", () => {
         const shell = sh();

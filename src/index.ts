@@ -43,7 +43,7 @@ const createShell = (options: ShellOptions = {}): Shell => {
             throw Object.assign(
                 new Error((child.stderr ? child.stderr + "\n" : "")
                     + "Error: Process exited with error code " + child.status),
-                {code: child.status}
+                {code: child.status, stderr: child.stderr}
             );
         }
         if (child.error && (child.error as any).code === "ENOENT" && childOptions.cwd && !existsSync(childOptions.cwd)) {
@@ -77,12 +77,14 @@ const createShell = (options: ShellOptions = {}): Shell => {
         mock: (pattern, command) => {
             if (pattern.match(/([\\"')(\n\r\$!`&<>\.])/))
                 throw new Error("Illegal character in pattern: " + RegExp.$1);
-            mocks.push({
+            const mock = {
                 name: pattern.split(" ")[0],
                 pattern: pattern.replace(/\s/g, "\\ "),
                 patternLength: pattern.replace(/\*$/, "").length,
                 command: command || "",
-            });
+            };
+            validateSyntax(mock);
+            mocks.push(mock);
             mocks.sort((a, b) => b.patternLength - a.patternLength);
         },
         mockRestore: () => {
@@ -90,6 +92,15 @@ const createShell = (options: ShellOptions = {}): Shell => {
         },
         handleSignals,
         handleSignalsEnd,
+    };
+    const validateSyntax = (mock: MockCommand): void => {
+        try {
+            shell.val`${mock.name}() {\n${unquoted(mock.command)}\n:\n}`;
+        }
+        catch (e) {
+            e.message = `Error in mock: ${mock.command}\n${e.stderr}`;
+            throw e;
+        }
     };
     const execOrCreateShell: ShellFunction<string> & CreateShellFunction = (arg: any = {}, ...commandVars: any[]): any => {
         if (arg.length) return exec({}, arg, ...commandVars);
