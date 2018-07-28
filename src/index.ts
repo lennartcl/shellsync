@@ -148,7 +148,12 @@ function wrapShellCommand(command: string, mocks: MockCommand[]) {
         __execMock() {
             case "$@" in
             ${mocks.map(m => `
-                ${m.pattern}) shift; ${m.command} ;;
+                ${m.pattern})
+                    shift;
+                    ( ${m.name}() { command ${m.name} "$@"; }
+                      ${m.command}
+                    )
+                    ;;
             `)}
             *) command "$@" ;;
             esac
@@ -164,7 +169,7 @@ function wrapShellCommand(command: string, mocks: MockCommand[]) {
         ${command}
 
         # Capture current directory
-        RET=$?; echo -n "$PWD">&${metaStream}; exit $RET
+        RET=$?; command echo -n "$PWD">&${metaStream}; exit $RET
     `;
 }
 

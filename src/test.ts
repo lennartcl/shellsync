@@ -199,6 +199,11 @@ describe('#createShell', () => {
         assert.equal(sh.val`git status`, "");
     });
     
+    it('supports calling mocked commands from mocks', () => {
+        sh.mock("echo *", "echo mocked-echo");
+        assert.equal(sh.val`echo hello`, "mocked-echo");
+    });
+    
     it('supports ssh', () => {
         shh`echo silence is gold`;
     });
