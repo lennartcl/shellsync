@@ -250,4 +250,10 @@ describe('#createShell', () => {
         const output = sh({input}).val`read -p "prompt "; echo $REPLY`;
         assert.equal(output, input);
     });
+
+    it("supports standard input for shh", () => {
+        const input = "hello";
+        const output = shh({input}).val`cat`;
+        assert.equal(output, input);
+    });
 });

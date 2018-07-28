@@ -173,13 +173,17 @@ function wrapDebug(command: string) {
 }
 
 const shell = createShell();
+const valOrCreateShell: ShellFunction<string> & CreateShellFunction = (arg: any = {}, ...commandVars: any[]): any => {
+    if (arg.length) return shell.val(arg, ...commandVars);
+    return createShell(Object.assign({}, shell.options, arg));
+};
 const sh = Object.assign(
     shell,
     {
         /** Execute a command. */
         sh: shell,
         /** Execute a command. Don't print anything to stdout or stderr. */
-        shh: Object.assign(shell.val, shell),
+        shh: Object.assign(valOrCreateShell, shell),
         quote,
         unquoted,
         default: shell,
