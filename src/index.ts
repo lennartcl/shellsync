@@ -178,14 +178,13 @@ function wrapDebug(command: string) {
 }
 
 const shell = createShell();
-const silentShell = createShell({stdio: [0, "pipe", "pipe", "pipe"]});
 const sh = Object.assign(
     shell,
     {
         /** Execute a command. */
         sh: shell,
         /** Execute a command. Don't print anything to stdout or stderr. */
-        shh: silentShell,
+        shh: Object.assign(shell.val, shell),
         quote,
         unquoted,
         default: shell,

@@ -209,10 +209,10 @@ describe('#createShell', () => {
         sh.options.debug = false;
     });
     
-    it('supports options.debug for shh', () => {
-        shh.options.debug = true;
+    it('supports options.debug for sh', () => {
+        sh.options.debug = true;
         shh`echo "let's get loud"; echo "like, very loud">&2`;
-        shh.options.debug = false;
+        sh.options.debug = false;
     });
     
     it('reports syntax errors', (next) => {

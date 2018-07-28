@@ -177,9 +177,9 @@ The delimiter used for `sh.vals`.
 
 Return a shell with specific options assigned. See `sh.options`. Example use: `sh({input: "stdin input"})\`cat > file.txt\``.
 
-### shh \`command\`: void
+### shh \`command\`: string
 
-Same as sh, but by default doesn't print anything to stdout or stderr.
+Same as sh.val; doesn't print anything to stdout or stderr.
 
 ## License
 
