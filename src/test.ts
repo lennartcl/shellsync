@@ -204,6 +204,14 @@ describe('#createShell', () => {
         assert.equal(sh.val`echo hello`, "mocked-echo");
     });
     
+    it('fails when trying to use a regex in mocks', (next) => {
+        try {
+            sh.mock("echo .*", "echo mocked-echo");
+        } catch (e) {
+            next();
+        }
+    });
+    
     it('supports ssh', () => {
         shh`echo silence is gold`;
     });
