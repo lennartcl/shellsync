@@ -45,8 +45,10 @@ export type TemplateError = "<<< Please invoke using template literal syntax, e.
 
 export type ShellFunction<T> = (
     commands: TemplateStringsArray | TemplateError,
-    ...commandVars: any[]
+    ...commandVars: TemplateVar[]
 ) => T;
+
+export type TemplateVar = Exclude<JSON, null>;
 
 export type CreateShellFunction = (options?: ShellOptions) => Shell;
 

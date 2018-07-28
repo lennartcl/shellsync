@@ -25,7 +25,7 @@ describe('#quote', () => {
     it('supports string arguments', () => {
         const bar = "bar";
         const baz = '"baz"';
-        const escaped = quote("foo" as any, bar, baz, null, undefined);
+        const escaped = quote("foo" as any, bar, baz, null as any, undefined as any);
         assert.equal(escaped, `foo bar '"baz"' '' ''`);
     });
     
@@ -36,16 +36,16 @@ describe('#quote', () => {
     });
 
     it('supports falsy arguments', () => {
-        const escaped = quote`foo ${false} ${undefined} ${0}`;
+        const escaped = quote`foo ${false} ${undefined as any} ${0}`;
         assert.equal(escaped, `foo false '' 0`);
     });
 
-    it('supports optional typed values', () => {
+    it('supports optional typed values with ! suffix', () => {
         interface Foo {
             opt?: string
         }
-        const foo: Foo = { opt: "opt "};
-        quote `foo.opt = ${foo.opt}`
+        const foo: Foo = {opt: "opt"};
+        quote `foo.opt = ${foo.opt!}`
     });
 
     it('supports plain string arguments', () => {

@@ -4,7 +4,7 @@
  *----------------------------------------------------------------------------------------------*/
 import * as child_process from "child_process";
 import {SpawnSyncReturns, SpawnSyncOptionsWithStringEncoding} from "child_process";
-import {Shell, ShellFunction, MockCommand, ShellOptions, TemplateError, ShellProperties, CreateShellFunction} from "./types";
+import {Shell, ShellFunction, MockCommand, ShellOptions, TemplateError, ShellProperties, CreateShellFunction, TemplateVar} from "./types";
 import {existsSync} from "fs";
 import {handleSignals, handleSignalsEnd, parseEmittedSignal, wrapDisableInterrupts, isHandleSignalsActive} from "./handle_signals";
 const shellEscape = require("any-shell-escape");
@@ -18,7 +18,7 @@ const createShell = (options: ShellOptions = {}): Shell => {
     let child: SpawnSyncReturns<string>;
     let mocks: MockCommand[] = [];
 
-    const exec = (overrideOptions: ShellOptions, commands: TemplateStringsArray | TemplateError, ...commandVars: any[]) => {
+    const exec = (overrideOptions: ShellOptions, commands: TemplateStringsArray | TemplateError, ...commandVars: TemplateVar[]) => {
         const shellProcess = typeof options.shell === "string" ? options.shell : "/bin/bash";
         
         let command = quote(commands, ...commandVars);
@@ -135,12 +135,12 @@ function stringify(arg: any): string {
     return "";
 }
 
-const unquoted = (...args: any[]): Object => {
+const unquoted = (...args: TemplateVar[]): Object => {
     return new UnquotedPart(args);
 }
 
 class UnquotedPart {
-    constructor(private args: any[]) {}
+    constructor(private args: TemplateVar[]) {}
 
     toString(): string {
         return this.args.map(stringify).join(" ");
