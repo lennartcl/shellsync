@@ -1,6 +1,6 @@
 import { SpawnSyncOptions } from "child_process";
 
-export interface Shell extends ShellProperties, ShellFunction<void>, CreateShellFunction {}
+export interface Shell<T> extends ShellProperties, ShellFunction<T>, CreateShellFunction<T> {}
 
 export interface ShellProperties {
     /** Options for this shell. */
@@ -50,7 +50,7 @@ export type ShellFunction<T> = (
 
 export type TemplateVar = Exclude<JSON, null>;
 
-export type CreateShellFunction = (options?: ShellOptions) => Shell;
+export type CreateShellFunction<T> = (options?: ShellOptions) => Shell<T>;
 
 export interface MockCommand {
     name: string;

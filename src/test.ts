@@ -77,6 +77,12 @@ describe('#createShell', () => {
         assert.equal(sh.options.cwd, `/tmp`);
     });
     
+    it('respects cd for shh', () => {
+        shh.options.cwd = "/";
+        shh `cd tmp`;
+        assert.equal(sh.options.cwd, `/tmp`);
+    });
+    
     it('supports .test()', () => {
         const result2 = sh.test `exit 0`;
         assert.equal(result2, true);
@@ -292,6 +298,12 @@ describe('#createShell', () => {
     it("supports standard input for shh", () => {
         const input = "hello";
         const output = shh({input}).val`cat`;
+        assert.equal(output, input);
+    });
+
+    it("supports standard input for shh", () => {
+        const input = "hello";
+        const output: string = shh({input})`cat`;
         assert.equal(output, input);
     });
 });

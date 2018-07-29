@@ -10,7 +10,7 @@ import {handleSignals, handleSignalsEnd, parseEmittedSignal, wrapDisableInterrup
 const shellEscape = require("any-shell-escape");
 const metaStream = 3;
 
-const createShell = (options: ShellOptions = {}): Shell => {
+function createShell<T>(options: ShellOptions = {}): Shell<T> {
     options.encoding = options.encoding || "utf8";
     options.maxBuffer = options.maxBuffer || 200 * 1024;
     options.stdio = options.stdio || [0, "inherit", "inherit", "pipe"];
@@ -102,10 +102,11 @@ const createShell = (options: ShellOptions = {}): Shell => {
             throw e;
         }
     };
-    const execOrCreateShell: ShellFunction<string> & CreateShellFunction = (arg: any = {}, ...commandVars: any[]): any => {
-        if (arg.length) return exec({}, arg, ...commandVars);
-        return createShell(Object.assign({}, options, arg));
-    };
+    const execOrCreateShell: ShellFunction<T> & CreateShellFunction<T> =
+        (arg: any = {}, ...commandVars: any[]): any => {
+            if (arg.length) return exec({}, arg, ...commandVars);
+            return createShell(Object.assign({}, options, arg));
+        };
     return Object.assign(execOrCreateShell, shell);
 }
 
@@ -188,11 +189,12 @@ function wrapDebug(command: string) {
     return `(set -x\n${command}\n)`;
 }
 
-const shell = createShell();
-const valOrCreateShell: ShellFunction<string> & CreateShellFunction = (arg: any = {}, ...commandVars: any[]): any => {
-    if (arg.length) return shell.val(arg, ...commandVars);
-    return createShell(Object.assign({}, shell.options, arg));
-};
+const shell = createShell<void>();
+const valOrCreateShell: ShellFunction<string> & CreateShellFunction<string> =
+    (arg: any = {}, ...commandVars: any[]): any => {
+        if (arg.length) return shell.val(arg, ...commandVars);
+        return createShell(Object.assign({}, shell.options, {stdio: [0, "pipe", "pipe", "pipe"]}, arg));
+    };
 const sh = Object.assign(
     shell,
     {
