@@ -51,10 +51,22 @@ export function wrapDisableInterrupts(script: string) {
     // Launch a new shell as a background process, intercepting any Control-C
     // sent to the foreground. Not efficient, but effective.
     return `
-        trap "printf '\\0SIGINT'>&3; trap : INT" INT
-        trap "printf '\\0SIGQUIT'>&3; trap : QUIT" QUIT
-        trap "printf '\\0SIGQUIT'>&3; trap : TERM" TERM
+        TRAPPED=
+        trap "TRAPPED=1; printf '\\0SIGINT'>&3; trap : INT" INT
+        trap "TRAPPED=1; printf '\\0SIGQUIT'>&3; trap : QUIT" QUIT
+        trap "TRAPPED=1; printf '\\0SIGQUIT'>&3; trap : TERM" TERM
+
         $SHELL -c ${shellEscape(script)} </dev/stdin &
-        while ! wait; do :; done
+        PID=$!
+        
+        while true; do
+            wait $PID
+            RET=$?
+            if [[ $TRAPPED ]]; then
+                TRAPPED=
+            else
+                exit $RET
+            fi
+        done
     `;
 }

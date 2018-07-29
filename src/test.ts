@@ -253,8 +253,7 @@ describe('#createShell', () => {
     it('reports syntax errors for sh.json', (next) => {
         try {
             sh.json`echo let's get json`;
-        }
-        catch (e) {
+        } catch (e) {
             assert.equal(e.code, 2);
             assert(e.message.match(/Error: Process exited with error code 2/), e.message);
             assert(e.message.match(/unexpected EOF/), e.message);
@@ -305,5 +304,22 @@ describe('#createShell', () => {
         const input = "hello";
         const output: string = shh({input})`cat`;
         assert.equal(output, input);
+    });
+    
+    it("supports non-zero exit codes for shh", (next) => {
+        try {
+            shh`this should fail`;
+        } catch (e) {
+            next();
+        }
+    });
+    
+    it("supports non-zero exit codes with handleSignals()", (next) => {
+        try {
+            sh.handleSignals();
+            shh`this should fail`;
+        } catch (e) {
+            next();
+        }
     });
 });
