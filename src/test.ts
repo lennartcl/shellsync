@@ -341,4 +341,10 @@ describe('#createShell', () => {
             next();
         }
     });
+
+    it("has a large maxBuffer", () => {
+        const size = 5 * 1024 * 1024;
+        const output = sh`printf "%${size}s"`;
+        assert.equal(output.length, size);
+    })
 });

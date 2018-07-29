@@ -39,6 +39,11 @@ export interface ShellOptions extends SpawnSyncOptions {
     fieldSeperator?: string;
     /** Run in debug mode, printing commands that are executed. */
     debug?: boolean;
+    /**
+     * Largest amount of data in bytes allowed on stdout or stderr. If exceeded, the child process is terminated.
+     * Default: `10 * 1024 * 1024`.
+     */
+    maxBuffer?: number;
 }
 
 export type TemplateError = "<<< Please invoke using template literal syntax, e.g. sh `command`;";

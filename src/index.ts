@@ -15,7 +15,7 @@ const stdioOut = [0, "inherit", "inherit", "pipe"];
 
 function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): Shell {
     options.encoding = options.encoding || "utf8";
-    options.maxBuffer = options.maxBuffer || 200 * 1024;
+    options.maxBuffer = options.maxBuffer || 10 * 1024 * 1024;
     options.stdio = options.stdio || stdioDefault;
 
     let child: SpawnSyncReturns<string>;
