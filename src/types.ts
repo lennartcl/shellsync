@@ -15,7 +15,7 @@ export interface ShellProperties {
     /** Execute a command, parse the result as JSON. */
     json: ShellFunction<JSON>;
     /** Execute a command, return true in case of success. */
-    test: ShellFunction<string | boolean>;
+    test: ShellFunction<boolean>;
     /**
      * Define a mock: instead of `pattern`, run `command`.
      * Patterns consist of one or more words and support globbing from the second word, e.g.

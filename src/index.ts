@@ -70,7 +70,8 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
         },
         test: (commands, ...commandVars) => {
             try {
-                return exec({}, commands, ...commandVars) || true;
+                exec({stdio: stdioHushed}, commands, ...commandVars);
+                return true;
             } catch {
                 return false;
             }

@@ -100,7 +100,7 @@ describe('#createShell', () => {
     
     it('supports .test() with string values', () => {
         const result2 = sh.test `echo success`;
-        assert.equal(result2, "success");
+        assert.equal(result2, true);
         const result1 = sh.test `echo -n`;
         assert.equal(result1, true);
     });
@@ -346,5 +346,10 @@ describe('#createShell', () => {
         const size = 5 * 1024 * 1024;
         const output = sh`printf "%${size}s"`;
         assert.equal(output.length, size);
-    })
+    });
+
+    it("has sh.out and shh.out functions", () => {
+        sh.out``;
+        shh.out``;
+    });
 });
