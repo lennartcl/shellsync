@@ -1,17 +1,17 @@
 import { SpawnSyncOptions } from "child_process";
 
-export interface Shell<T> extends ShellProperties, ShellFunction<T>, CreateShellFunction<T> {}
+export interface Shell extends ShellProperties, ShellFunction<string>, CreateShellFunction {}
 
 export interface ShellProperties {
     /** Options for this shell. */
     options: ShellOptions;
-    /** Execute a command, return stdout. */
-    val: ShellFunction<string>;
+    /** Execute a command, print stdout and stderr. */
+    out: ShellFunction<void>;
     /**
      * Execute a command, return stdout split by null characters (if found) or by newline characters.
      * Use `sh.options.fieldSeperator` to pick a custom delimiter character.
      */
-    vals: ShellFunction<string[]>;
+    array: ShellFunction<string[]>;
     /** Execute a command, parse the result as JSON. */
     json: ShellFunction<JSON>;
     /** Execute a command, return true in case of success. */
@@ -35,7 +35,7 @@ type JSON = Object | string | number | boolean | null;
 
 export interface ShellOptions extends SpawnSyncOptions {
     encoding?: BufferEncoding;
-    /** The delimiter used for `sh.vals`. */
+    /** The delimiter used for `sh.array`. */
     fieldSeperator?: string;
     /** Run in debug mode, printing commands that are executed. */
     debug?: boolean;
@@ -50,7 +50,7 @@ export type ShellFunction<T> = (
 
 export type TemplateVar = Exclude<JSON, null>;
 
-export type CreateShellFunction<T> = (options?: ShellOptions) => Shell<T>;
+export type CreateShellFunction = (options?: ShellOptions) => Shell;
 
 export interface MockCommand {
     name: string;

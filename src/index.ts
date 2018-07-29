@@ -9,14 +9,16 @@ import {existsSync} from "fs";
 import {handleSignals, handleSignalsEnd, parseEmittedSignal, wrapDisableInterrupts, isHandleSignalsActive} from "./handle_signals";
 const shellEscape = require("any-shell-escape");
 const metaStream = 3;
+const stdioDefault = [0, "pipe", "inherit", "pipe"];
+const stdioHushed = [0, "pipe", "pipe", "pipe"];
+const stdioOut = [0, "inherit", "inherit", "pipe"];
 
-function createShell<T>(options: ShellOptions = {}): Shell<T> {
+function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): Shell {
     options.encoding = options.encoding || "utf8";
     options.maxBuffer = options.maxBuffer || 200 * 1024;
-    options.stdio = options.stdio || [0, "inherit", "inherit", "pipe"];
+    options.stdio = options.stdio || stdioDefault;
 
     let child: SpawnSyncReturns<string>;
-    let mocks: MockCommand[] = [];
 
     const exec = (overrideOptions: ShellOptions, commands: TemplateStringsArray | TemplateError, ...commandVars: TemplateVar[]) => {
         const shellProcess = typeof options.shell === "string" ? options.shell : "/bin/bash";
@@ -50,26 +52,25 @@ function createShell<T>(options: ShellOptions = {}): Shell<T> {
             child.error.message = `cwd does not exist: ${childOptions.cwd}`;
             throw child.error;
         }
-        if (child.error)
-            throw child.error;
+        if (child.error) throw child.error;
         return cleanShellOutput(child.stdout && child.stdout.toString()) || "";
     };
 
     const shell: ShellProperties = {
         get options() { return options },
         set options(value) { options = value },
-        val: (commands, ...commandVars) => {
-            return exec({stdio: [0, "pipe", "pipe", "pipe"]}, commands, ...commandVars);
+        out: (commands, ...commandVars) => {
+            return exec({stdio: stdioOut}, commands, ...commandVars);
         },
-        vals: (commands, ...commandVars) => {
-            return shell.val(commands, ...commandVars).split(options.fieldSeperator || "\n");
+        array: (commands, ...commandVars) => {
+            return exec({}, commands, ...commandVars).split(options.fieldSeperator || "\n");
         },
         json: (commands, ...commandVars) => {
-            return JSON.parse(shell.val(commands, ...commandVars));
+            return JSON.parse(exec({}, commands, ...commandVars));
         },
         test: (commands, ...commandVars) => {
             try {
-                return shell.val(commands, ...commandVars) || true;
+                return exec({}, commands, ...commandVars) || true;
             } catch {
                 return false;
             }
@@ -88,21 +89,21 @@ function createShell<T>(options: ShellOptions = {}): Shell<T> {
             mocks.sort((a, b) => b.patternLength - a.patternLength);
         },
         mockRestore: () => {
-            mocks = [];
+            mocks.splice(0, mocks.length);
         },
         handleSignals,
         handleSignalsEnd,
     };
     const validateSyntax = (mock: MockCommand): void => {
         try {
-            shell.val`${mock.name}() {\n${unquoted(mock.command)}\n:\n}`;
+            shellHushed`${mock.name}() {\n${unquoted(mock.command)}\n:\n}`;
         }
         catch (e) {
             e.message = `Error in mock: ${mock.command}\n${e.stderr}`;
             throw e;
         }
     };
-    const execOrCreateShell: ShellFunction<T> & CreateShellFunction<T> =
+    const execOrCreateShell: ShellFunction<string> & CreateShellFunction =
         (arg: any = {}, ...commandVars: any[]): any => {
             if (arg.length) return exec({}, arg, ...commandVars);
             return createShell(Object.assign({}, options, arg));
@@ -189,19 +190,16 @@ function wrapDebug(command: string) {
     return `(set -x\n${command}\n)`;
 }
 
-const shell = createShell<void>();
-const valOrCreateShell: ShellFunction<string> & CreateShellFunction<string> =
-    (arg: any = {}, ...commandVars: any[]): any => {
-        if (arg.length) return shell.val(arg, ...commandVars);
-        return createShell(Object.assign({}, shell.options, {stdio: [0, "pipe", "pipe", "pipe"]}, arg));
-    };
+const sharedMocks: MockCommand[] = [];
+const shell = createShell({}, sharedMocks);
+const shellHushed = createShell(Object.assign({}, shell.options, {stdio: stdioHushed}), sharedMocks);
 const sh = Object.assign(
     shell,
     {
-        /** Execute a command. */
+        /** Execute a command. Return stdout as a string; print stderr. */
         sh: shell,
         /** Execute a command. Don't print anything to stdout or stderr. */
-        shh: Object.assign(valOrCreateShell, shell),
+        shh: shellHushed,
         quote,
         unquoted,
         default: shell,

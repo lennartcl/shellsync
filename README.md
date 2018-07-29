@@ -1,110 +1,115 @@
 # shellsync
 
-Shell scripting for Node.js.
+Synchronous shell scripting for Node.js.
 
-* Pragmatic: automate tasks using synchronous code and with familiar commands from the command line.
-* Powerful: use JavaScript or TypeScript functions, modules, and libraries.
-* Robust: use uninterruptable critical sections and harden your code with standard testing frameworks and mocking.
-* Safe: use automatic, safe variable escaping.
+* **Pragmatic**: automate tasks using synchronous code and with familiar commands from the command line.
+* **Powerful**: use JavaScript or TypeScript functions, modules, and libraries.
+* **Robust**: use uninterruptable sections and harden your code with standard testing frameworks and mocking.
+* **Safe**: use automatic, safe variable escaping.
 
 ## Usage
 
-Use `sh` to synchronously run shell commands and print to stdout:
+Use `sh` to synchronously run shell commands:
 
-```
+```javascript
 const sh = require("shellsync");
-sh `cd /tmp`;
-sh `ls`;      // print file listing of /tmp to stdout
+const filename = "file name with spaces.txt";
+sh`cd /tmp`;
+sh`cat ${filename}`; // read filename\ with\ spaces.txt
 ```
 
 Note how the above uses ES6 [tagged template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals),
-calling the `sh` function without parentheses. This makes the invocations slightly shorter allows shellsync to safely quote any values passed to it.
+calling the `sh` function without parentheses. This makes the invocations slightly shorter allows shellsync to safely escape any values passed to it.
 
-Use `sh.val`, `sh.vals`, or `sh.json` to capture values:
+Use `sh`, `sh.array`, or `sh.json` to capture values:
 
-```
-let v1 = sh.val `echo hello`;             // set v1 to "hello"
-let v2 = sh.vals `lsof -t -i :8080`;      // set v2 to all process ids listening on port 8080
-let v3 = sh.json `echo '{"foo": "bar"}'`; // set v3 to {"foo": "bar"}
+```javascript
+let v1 = sh`echo hello`;                 // set v1 to "hello"
+let v2 = sh.array`lsof -t -i :8080`;     // set v2 to all process ids listening on port 8080
+let v3 = sh.json`echo '{"foo": "bar"}'`; // set v3 to {"foo": "bar"}
 ```
 
 Use `sh.test` to determine command success (by default, failure throws):
 
-```
-if (!sh.test `which node`) {
+```javascript
+if (!sh.test`which node`) {
     throw new Error("Node is not on the path!");
 }
 ```
 
-Use `shh` to run commands without printing anything to stdout or stderr:
+The commands above only output what is written to stderr. Use `sh.out` to also print stdout, or use `shh` completely mute stdout and stderr:
 
-```
+```javascript
 const {shh} = require("shellsync");
-shh `git init`;
+shh`git init`;             // git init (no output printed)
+sh.out`echo "SHOUTING!"`;  // print "SHOUTING!" to stdout
 ```
 
 ### Safe variable escaping
 
-Template values are automatically quoted:
+> _"The vast majority of [shell scripting] pitfalls are in some way related to unquoted expansions"_ – [Bash Pitfalls wiki](https://mywiki.wooledge.org/BashPitfalls)
 
-```
+shellsync safely quotes variables automatically:
+
+```javascript
 let filename = "filename with spaces.txt";
-let contents = sh.val `cat ${filename}`; // ls filename\ with\ spaces.txt
+sh`echo "hello" > cat ${filename}`; // write to filename\ with\ spaces.txt
 ```
 
 Use `unquoted()` to disable automatic quoting:
 
-```
-import { unquoted } from "shellsync";
-let command2 = "echo foo";
-sh `ls; ${unquoted(command2)}`; // ls; echo foo
+```javascript
+import {unquoted} from "shellsync";
+let command2 = "sudo apt-get install foo";
+sh`ls; ${unquoted(command2)}`; // ls; sudo apt-get install foo
 ```
 
 ### Writing tests
 
+> _"I find that writing unit tests actually increases my programming speed."_ – Martin Fowler
+
 Test your shellsync scripts using mocking and standard testing frameworks such as Mocha or Jest.
 
-Use `sh.mock(command, targetCommand)` to mock shell command using [globs](https://mywiki.wooledge.org/glob)
-such as `git log`, `git status`, or `git *`. The shortest pattern wins.
+Use `sh.mock(pattern, command)` to mock shell command using [glob patterns](https://mywiki.wooledge.org/glob)
+such as `git log` or `git *`. If you have multiple mocks, the shortest matching pattern wins.
 
-Use `sh.restoreMocks()` to restore all mocked commands to the original shell command.
+`sh.restoreMocks()` restores all mocked commands to the original shell command.
 
 Example Mocha test:
 
-```
+```javascript
 const sh = require("shellsync");
 
 beforeEach(() => sh.mockRestore());
 
 it("mocks git status", () => {
     sh.mock("git status", `echo git status called`);
-    assert.equal(sh.val `git status`, "git status called");
+    assert.equal(sh`git status`, "git status called");
 });
 
 it("mocks arbitrary git command", () => {
     sh.mock("git *", `echo git command called: $1`);
-    assert.equal(sh.val `git foo`, "git command called: foo");
+    assert.equal(sh`git foo`, "git command called: foo");
 });
 ```
 
-### Uninterruptable critical sections
+### Uninterruptable sections
 
-Users can press Control-C in CLI programs, which means they can end Node.js and shell scripts
-at _any given statement_. Control-C interrupts and related signals can leave a script
+Users can press Control-C in CLI programs, which means they can end scripts
+halfway _any statement_. That means they can leave a system
 in an undefined state. In Node.js, Control-C even ends a program ignoring any `finally`
-clauses that you might use for cleanup.
+clauses that might be used for cleanup.
 
-Use `sh.handleSignals()` for critical sections of code where these signals should be
-temporarily ignored:
+Use `sh.handleSignals()` for sections of code where these signals should be temporarily ignored:
 
-```
+```javascript
 sh.handleSignals(); // begin critical section
 
-sh `command1`;
-sh `command2`;
+sh`command1`;
+sh`command2`;
 sh.handleSignals(); // handle any pending signals by calling handleSignals() again
-sh `command3`;
-sh `command4`;
+sh`command3`;
+sh`command4`;
 
 sh.handleSignalsEnd(); // end critical section
 ```
@@ -113,71 +118,72 @@ Note that `sh.handleSignals()` affects both shell and Node code.
 
 ## API
 
-### sh \`command\`: void
-
-Execute a command.
-
-#### sh.test \`command\`: boolean
-
-Execute a command, return true in case of success.
-
-#### sh.val \`command\`: string
+### sh\`command\`: void
 
 Execute a command, return stdout.
 
-#### sh.vals \`command\`: string[]
+### sh.test\`command\`: boolean
+
+Execute a command, return true in case of success.
+
+### sh.array\`command\`: string[]
 
 Execute a command, return stdout split by null characters (if found) or by newline characters.
 Use `sh.options.fieldSeperator` to pick a custom delimiter character.
 
-#### sh.json \`command\`: any
+### sh.json\`command\`: any
 
 Execute a command, parse the result as JSON.
 
-#### sh.handleSignals(): void
+### sh.handleSignals(): void
 
 Disable processing of SIGINT/TERM/QUIT signals. Also, process any pending signals.
 
-#### sh.handleSignalsEnd(): void
+### sh.handleSignalsEnd(): void
 
 Re-enable processing of SIGINT/TERM/QUIT signals. Also, process any pending signals.
 
-#### sh.mock(pattern, [\`command\`]): void
+### sh.mock(pattern, [command]): void
 
 Define a mock: instead of `pattern`, run `command`.
 Patterns consist of one or more words and support globbing from the second word, e.g.
 `git`, `git status`, `git s*`. The most specific pattern is used in case multiple
 mocks are defined.
 
-#### sh.mockRestore(): void
+### sh.mockRestore(): void
 
 Remove all mocks.
 
-#### sh.quote \`command\`: string
+### sh.quote\`command\`: string
 
 Similar to `sh`, but return the command that would be executed.
 
-#### sh.unquoted(...args): UnquotedPart
+### sh.unquoted(...args): UnquotedPart
 
 Create an unquoted part of a `command` template.
 
-#### sh.options: SpawnSyncOptions
+### sh.options: SpawnSyncOptions
 
 See [the options for child_process](https://nodejs.org/api/child_process.html#child_process_child_process_spawnsync_command_args_options).
 
-##### sh.options.debug: boolean
+### sh.options.debug: boolean
 
 Run in debug mode, printing commands that are executed.
 
-##### sh.options.fieldSeperator: string
+### sh.options.fieldSeperator: string
 
-The delimiter used for `sh.vals`.
+The delimiter used for `sh.array`.
 
-##### sh(options): Shell
+### sh(options): Shell
 
-Return a shell with specific options assigned. See `sh.options`. Example use: `sh({input: "stdin input"})\`cat > file.txt\``.
+Return a shell with specific options assigned. See `sh.options`. Example use:
 
-### shh \`command\`: string
+```javascript
+const input = "some text to write to a file";
+sh({input})`cat > file.txt`;
+```
+
+### shh\`command\`: string
 
 Same as sh.val; doesn't print anything to stdout or stderr.
 

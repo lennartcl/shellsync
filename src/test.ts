@@ -61,13 +61,13 @@ describe('#createShell', () => {
     
     it('can echo', () => {
         const hoi = `"hoi"`;
-        const result = sh.val `echo ${hoi}`;
+        const result = sh `echo ${hoi}`;
         assert.equal(result, `"hoi"`);
     });
 
     it('respects cwd', () => {
         sh.options.cwd = "/";
-        const result = sh.val `echo $PWD`;
+        const result = sh `echo $PWD`;
         assert.equal(result, `/`);
     });
     
@@ -111,18 +111,17 @@ describe('#createShell', () => {
     });
     
     it('supports echo -n', () => {
-        const result = sh.val `echo -n blie`;
+        const result = sh `echo -n blie`;
         assert.equal(result, "blie");
     });
     
-    it('handles ENOENT gracefully', () => {
+    it('handles ENOENT gracefully', (next) => {
         try {
-            sh.val `dontexistsorry`;
+            shh`dontexistsorry`;
         } catch (e) {
             assert(e.code, e.stack);
-            return;
+            next();
         }
-        throw new Error("Exception expected");
     });
     
     it('supports sh.json', () => {
@@ -130,8 +129,8 @@ describe('#createShell', () => {
         assert.deepEqual(result, {foo: 3});
     });
     
-    it('supports sh.vals', () => {
-        const result = sh.vals`echo "1\n2"`;
+    it('supports sh.array', () => {
+        const result = sh.array`echo "1\n2"`;
         assert.deepEqual(result, [1,2]);
     });
     
@@ -160,17 +159,22 @@ describe('#createShell', () => {
     });
     
     it('supports plain string arguments', () => {
-        assert.equal(sh.val("echo hi" as any), "hi");
+        assert.equal(sh("echo hi" as any), "hi");
     });
     
     it('supports mocks', () => {
         sh.mock("git", `echo fake-git`);
-        assert.equal(sh.val`git`, "fake-git");
+        assert.equal(sh`git`, "fake-git");
     });
     
     it('supports pattern-based mocks', () => {
         sh.mock("git foo", `echo git foo`);
-        assert.equal(sh.val`git foo`, "git foo");
+        assert.equal(sh`git foo`, "git foo");
+    });
+    
+    it('supports pattern-based mocks with globs', () => {
+        sh.mock("git foo *", `echo git foo stuff`);
+        assert.equal(sh`git foo x`, "git foo stuff");
     });
     
     it('supports pattern-based mocks in order of specificity', () => {
@@ -180,38 +184,43 @@ describe('#createShell', () => {
         sh.mock("foo bar", `echo foo bar`);
         sh.mock("foo *", `echo foo x`);
         sh.mock("foo", `echo foo`);
-        assert.equal(sh.val`git`, `git`);
-        assert.equal(sh.val`git x`, `git x`);
-        assert.equal(sh.val`git ls`, `git ls`);
-        assert.equal(sh.val`foo bar`, `foo bar`);
-        assert.equal(sh.val`foo x`, `foo x`);
-        assert.equal(sh.val`foo`, `foo`);
+        assert.equal(sh`git`, `git`);
+        assert.equal(sh`git x`, `git x`);
+        assert.equal(sh`git ls`, `git ls`);
+        assert.equal(sh`foo bar`, `foo bar`);
+        assert.equal(sh`foo x`, `foo x`);
+        assert.equal(sh`foo`, `foo`);
     });
     
     it('only captures specific patterns for mocks', () => {
         sh.mock("pwd mocked", `echo mocked`);
-        assert.equal(sh.val`cd /; pwd`, "/");
-        assert.equal(sh.val`cd /; pwd mocked`, "mocked");
+        assert.equal(sh`cd /; pwd`, "/");
+        assert.equal(sh`cd /; pwd mocked`, "mocked");
     });
     
     it('supports partial patterns for mocks', () => {
         sh.mock("pwd mocked *", `echo mocked`);
-        assert.equal(sh.val`cd /; pwd mocked bla bla`, "mocked");
+        assert.equal(sh`cd /; pwd mocked bla bla`, "mocked");
     });
     
     it('supports $1 in mocks', () => {
         sh.mock("git *", `echo git-$1`);
-        assert.equal(sh.val`git status`, "git-status");
+        assert.equal(sh`git status`, "git-status");
+    });
+    
+    it('shares mocks between sh and shh', () => {
+        sh.mock("git *", `echo git-$1`);
+        assert.equal(shh`git status`, "git-status");
     });
     
     it('supports glob-based mocks', () => {
         sh.mock("git *");
-        assert.equal(sh.val`git status`, "");
+        assert.equal(sh`git status`, "");
     });
     
     it('supports calling mocked commands from mocks', () => {
         sh.mock("echo *", "echo mocked-echo");
-        assert.equal(sh.val`echo hello`, "mocked-echo");
+        assert.equal(sh`echo hello`, "mocked-echo");
     });
     
     it('fails when trying to use a regex in mocks', (next) => {
@@ -240,9 +249,19 @@ describe('#createShell', () => {
     
     it('reports syntax errors', (next) => {
         try {
-            sh.val`echo let's get errors`;
+            sh`echo let's get errors`;
+        } catch (e) {
+            assert.equal(e.code, 2);
+            assert(e.message.match(/Error: Process exited with error code 2/), e.message);
+            assert(!e.message.match(/unexpected EOF/), e.message);
+            next()
         }
-        catch (e) {
+    });
+    
+    it('reports syntax errors with more details for shh', (next) => {
+        try {
+            shh`echo let's get errors`;
+        } catch (e) {
             assert.equal(e.code, 2);
             assert(e.message.match(/Error: Process exited with error code 2/), e.message);
             assert(e.message.match(/unexpected EOF/), e.message);
@@ -250,9 +269,9 @@ describe('#createShell', () => {
         }
     });
     
-    it('reports syntax errors for sh.json', (next) => {
+    it('reports syntax errors for shh.json', (next) => {
         try {
-            sh.json`echo let's get json`;
+            shh.json`echo let's get json`;
         } catch (e) {
             assert.equal(e.code, 2);
             assert(e.message.match(/Error: Process exited with error code 2/), e.message);
@@ -264,39 +283,39 @@ describe('#createShell', () => {
     it('reports syntax errors for mocks early at declaration time', (next) => {
         try {
             sh.mock("json", `echo {"method:"foo","params":"ola"}`);
-        }
-        catch (e) {
+        } catch (e) {
+            assert(e.message.match(/unexpected EOF/), e.message);
             next()
         }
     });
 
     it("supports sh without any arguments", () => {
         const shell = sh();
-        shell.val`:`;
+        shell`:`;
     });
 
     it("supports standard input", () => {
         const input = "hello";
-        const output = sh({input}).val`cat`;
+        const output = sh({input})`cat`;
         assert.equal(output, input);
     });
 
     it("supports standard input with read", () => {
         const input = "hello";
-        const output = sh({input}).val`read -p "prompt"; echo $REPLY`;
+        const output = sh({input})`read -p "prompt"; echo $REPLY`;
         assert.equal(output, input);
     })
 
     it("supports standard input with read and handleSignals()", () => {
         sh.handleSignals();
         const input = "hello";
-        const output = sh({input}).val`read -p "prompt "; echo $REPLY`;
+        const output = sh({input})`read -p "prompt "; echo $REPLY`;
         assert.equal(output, input);
     });
 
     it("supports standard input for shh", () => {
         const input = "hello";
-        const output = shh({input}).val`cat`;
+        const output = shh({input})`cat`;
         assert.equal(output, input);
     });
 
