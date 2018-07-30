@@ -24,8 +24,7 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
         const shellProcess = typeof options.shell === "string" ? options.shell : "/bin/bash";
         
         let command = quote(commands, ...commandVars);
-        if (options.debug) command = wrapDebug(command);
-        command = wrapShellCommand(command, mocks);
+        command = wrapShellCommand(command, mocks, options.debug);
         if (isHandleSignalsActive()) command = wrapDisableInterrupts(command);
         
         const childOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
@@ -156,15 +155,19 @@ class UnquotedPart {
     }
 }
 
-function wrapShellCommand(command: string, mocks: MockCommand[]) {
+function wrapShellCommand(command: string, mocks: MockCommand[], debug = false) {
+    const setXtrace = debug ? `set -x` : ``;
     return `
         # Mock definitions
         __execMock() {
+            { set +x; } 2>/dev/null
             case "$@" in
             ${mocks.map(m => `
                 ${m.pattern})
                     shift;
                     ( ${m.name}() { command ${m.name} "$@"; }
+                      ${setXtrace}
+                      : mock for ${m.name} :
                       ${m.command}
                     )
                     ;;
@@ -180,15 +183,13 @@ function wrapShellCommand(command: string, mocks: MockCommand[]) {
             export -f ${m.name}
         `).join("\n")}
 
+        ${setXtrace}
         ${command}
+        { RET=$?; set +x; } 2>/dev/null
 
         # Capture current directory
-        RET=$?; command echo -n "$PWD">&${metaStream}; exit $RET
+        command echo -n "$PWD">&${metaStream}; exit $RET
     `;
-}
-
-function wrapDebug(command: string) {
-    return `(set -x\n${command}\n)`;
 }
 
 const sharedMocks: MockCommand[] = [];

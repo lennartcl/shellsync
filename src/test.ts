@@ -55,7 +55,7 @@ describe('#quote', () => {
 });
 
 describe('#createShell', () => {
-    beforeEach(() => {
+    afterEach(() => {
         sh.mockRestore();
     });
     
@@ -327,7 +327,7 @@ describe('#createShell', () => {
     
     it("supports non-zero exit codes for shh", (next) => {
         try {
-            shh`this should fail`;
+            shh`!this should fail`;
         } catch (e) {
             next();
         }
