@@ -32,27 +32,28 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
             childOptions.stdio = ["pipe", ...childOptions.stdio.slice(1)];
 
         child = child_process.spawnSync(shellProcess, ["-c", command], childOptions);
+        const {output, stdout, stderr, status, error} = child;
         
-        if (child.output && child.output[metaStream][0] === "\0")
-            parseEmittedSignal(child.output[metaStream]);
-        else if (child.output && child.output[metaStream])
-            shell.options.cwd = child.output[metaStream];
-        if (options.debug && child.stderr)
-            console.error(cleanShellOutput(child.stderr));
+        if (output && output[metaStream][0] === "\0")
+            parseEmittedSignal(output[metaStream]);
+        else if (output && output[metaStream])
+            shell.options.cwd = output[metaStream];
+        if (options.debug && stderr)
+            console.error(cleanShellOutput(stderr));
 
-        if (child.status) {
+        if (status) {
             throw Object.assign(
-                new Error((child.stderr ? child.stderr + "\n" : "")
-                    + "Error: Process exited with error code " + child.status),
-                {code: child.status, stderr: child.stderr}
+                new Error((stderr ? stderr + "\n" : "")
+                    + "Error: Process exited with error code " + status),
+                {code: status, stderr}
             );
         }
-        if (child.error && (child.error as any).code === "ENOENT" && childOptions.cwd && !existsSync(childOptions.cwd)) {
-            child.error.message = `cwd does not exist: ${childOptions.cwd}`;
-            throw child.error;
+        if (error && (error as any).code === "ENOENT" && childOptions.cwd && !existsSync(childOptions.cwd)) {
+            error.message = `cwd does not exist: ${childOptions.cwd}`;
+            throw error;
         }
-        if (child.error) throw child.error;
-        return cleanShellOutput(child.stdout && child.stdout.toString()) || "";
+        if (error) throw error;
+        return cleanShellOutput(stdout) || "";
     };
 
     const shell: ShellProperties = {
