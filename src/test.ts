@@ -57,6 +57,7 @@ describe('#quote', () => {
 describe('#createShell', () => {
     afterEach(() => {
         sh.mockRestore();
+        sh.handleSignalsEnd();
     });
     
     it('can echo', () => {
@@ -351,5 +352,20 @@ describe('#createShell', () => {
     it("has sh.out and shh.out functions", () => {
         sh.out``;
         shh.out``;
+    });
+
+    it("supports /bin/sh", () => {
+        sh.options.shell = "/bin/sh";
+        const output = sh`echo works`;
+        sh`echo still works`;
+        assert.equal(output, "works");
+    });
+
+    it("supports /bin/sh with handleSignals()", () => {
+        sh.handleSignals();
+        sh.options.shell = "/bin/sh";
+        const output = sh`echo works`;
+        sh`echo still works`;
+        assert.equal(output, "works");
     });
 });

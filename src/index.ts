@@ -158,7 +158,7 @@ class UnquotedPart {
 
 function wrapShellCommand(command: string, mocks: MockCommand[], debug = false) {
     const setXtrace = debug ? `set -x` : ``;
-    return `
+    return `:
         # Mock definitions
         __execMock() {
             { set +x; } 2>/dev/null
@@ -189,7 +189,7 @@ function wrapShellCommand(command: string, mocks: MockCommand[], debug = false) 
         { RET=$?; set +x; } 2>/dev/null
 
         # Capture current directory
-        command echo -n "$PWD">&${metaStream}; exit $RET
+        command printf "$PWD">&${metaStream}; exit $RET
     `;
 }
 
