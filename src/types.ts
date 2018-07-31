@@ -25,11 +25,20 @@ export interface ShellProperties {
     mock(pattern: string, command?: string): void;
     /** Remove all mocks. */
     mockRestore(): void;
-    /** Disable processing of SIGINT/TERM/QUIT signals. Also, process any pending signals. */
-    handleSignals(): void;
-    /** Re-enable processing of SIGINT/TERM/QUIT signals. Also, process any pending signals. */
+    /**
+     * Disable or delay processing of SIGINT/TERM/QUIT signals. Also, process any pending signals.
+     */
+    handleSignals(options?: HandleSignalsOptions): void;
+    /**
+     * Re-enable processing of SIGINT/TERM/QUIT signals. Also, process any pending signals.
+     */
     handleSignalsEnd(): void;
 }
+
+export interface HandleSignalsOptions {
+    /** Timeout in milliseconds, or `null` for no timeout. Default `null`. */
+    timeout?: number | null;
+};
 
 type JSON = Object | string | number | boolean | null;
 

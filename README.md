@@ -1,11 +1,11 @@
 # shellsync
 
-Synchronous shell scripting for Node.js.
+Synchronous shell scripting for Node.js and TypeScript.
 
-* **Pragmatic**: automate tasks using synchronous code and with familiar commands from the command line.
+* **Pragmatic**: automate tasks using synchronous code, using familiar commands from the command line.
 * **Powerful**: use JavaScript or TypeScript functions, modules, and libraries.
 * **Robust**: use uninterruptable sections and harden your code with standard testing frameworks and mocking.
-* **Safe**: use automatic, safe variable escaping.
+* **Safe**: avoid most Bash pitfalls and use automatic, safe variable escaping.
 
 ## Usage
 
@@ -80,8 +80,6 @@ Example Mocha test:
 ```javascript
 const sh = require("shellsync");
 
-beforeEach(() => sh.mockRestore());
-
 it("mocks git status", () => {
     sh.mock("git status", `echo git status called`);
     assert.equal(sh`git status`, "git status called");
@@ -91,6 +89,9 @@ it("mocks arbitrary git command", () => {
     sh.mock("git *", `echo git command called: $1`);
     assert.equal(sh`git foo`, "git command called: foo");
 });
+
+// Restore all mocked commands
+afterEach(() => sh.mockRestore());
 ```
 
 ### Uninterruptable sections
@@ -107,14 +108,13 @@ sh.handleSignals(); // begin critical section
 
 sh`command1`;
 sh`command2`;
-sh.handleSignals(); // handle any pending signals by calling handleSignals() again
 sh`command3`;
 sh`command4`;
 
 sh.handleSignalsEnd(); // end critical section
 ```
 
-Note that `sh.handleSignals()` affects both shell and Node code.
+Note that `sh.handleSignals()` affects both shell and Node.js code. If you're concerned your program won't end until the [heat death of the universe](https://en.wikipedia.org/wiki/Heat_death_of_the_universe) and need to offer Control-C as an early way out, you can also pass a timeout in milliseconds: `sh.handleSignals({timeout: 3000})`.
 
 ## API
 
@@ -135,13 +135,17 @@ Use `sh.options.fieldSeperator` to pick a custom delimiter character.
 
 Execute a command, parse the result as JSON.
 
-### sh.handleSignals(): void
+### sh.handleSignals({timeout = null}): void
 
-Disable processing of SIGINT/TERM/QUIT signals. Also, process any pending signals.
+Disable processing of SIGINT/TERM/QUIT signals. Optionally accepts a `timeout` in milliseconds
+
+When invoked, any signals pending since the last invocation get processed.
 
 ### sh.handleSignalsEnd(): void
 
-Re-enable processing of SIGINT/TERM/QUIT signals. Also, process any pending signals.
+Re-enable processing of SIGINT/TERM/QUIT signals.
+
+When invoked, any signals pending since the last invocation get processed.
 
 ### sh.mock(pattern, [command]): void
 
