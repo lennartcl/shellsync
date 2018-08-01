@@ -3,7 +3,7 @@
 Synchronous shell scripting for Node.js and TypeScript.
 
 * **Pragmatic**: automate tasks using synchronous code, using familiar commands from the command line.
-* **Powerful**: use JavaScript or TypeScript functions, modules, and libraries.
+* **Powerful**: use JavaScript or TypeScript functions, modules, libraries, and for constructs like try/catch/finally.
 * **Robust**: use uninterruptable sections and harden your code with standard testing frameworks and mocking.
 * **Safe**: avoid most Bash pitfalls and use automatic, safe variable escaping.
 
@@ -19,7 +19,7 @@ sh`cat ${filename}`; // read filename\ with\ spaces.txt
 ```
 
 Note how the above uses ES6 [tagged template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals),
-calling the `sh` function without parentheses. This makes the invocations slightly shorter allows shellsync to safely escape any values passed to it.
+calling the `sh` function without parentheses. This makes the invocations slightly shorter and allows shellsync to safely escape any values passed to it.
 
 Use `sh`, `sh.array`, or `sh.json` to capture values:
 
@@ -70,8 +70,7 @@ sh`ls; ${unquoted(command2)}`; // ls; sudo apt-get install foo
 
 Test your shellsync scripts using mocking and standard testing frameworks such as Mocha or Jest.
 
-Use `sh.mock(pattern, command)` to mock shell command using [glob patterns](https://mywiki.wooledge.org/glob)
-such as `git log` or `git *`. If you have multiple mocks, the shortest matching pattern wins.
+Use `sh.mock(pattern, command)` to mock shell command using [glob patterns](https://mywiki.wooledge.org/glob). For example, use the pattern `git log` to mock any calls to `git log`, or use `git *` to mock all calls to `git` accross the board. If you have multiple mocks, the longest (most specific) matching pattern wins.
 
 `sh.restoreMocks()` restores all mocked commands to the original shell command.
 
@@ -151,7 +150,7 @@ When invoked, any signals pending since the last invocation get processed.
 
 Define a mock: instead of `pattern`, run `command`.
 Patterns consist of one or more words and support globbing from the second word, e.g.
-`git`, `git status`, `git s*`. The most specific pattern is used in case multiple
+`git`, `git status`, `git s*`. The longest (most specific) pattern is used in case multiple
 mocks are defined.
 
 ### sh.mockRestore(): void
