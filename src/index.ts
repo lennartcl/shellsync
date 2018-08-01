@@ -77,7 +77,7 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
             }
         },
         mock: (pattern, command) => {
-            if (pattern.match(/([\\"')(\n\r\$!`&<>\.])/))
+            if (pattern.match(/([\\"')(\n\r\$!`&<>\.\$;])/))
                 throw new Error("Illegal character in pattern: " + RegExp.$1);
             const mock = {
                 name: pattern.split(" ")[0],

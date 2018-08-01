@@ -232,6 +232,14 @@ describe('#createShell', () => {
         }
     });
     
+    it('fails on mocks patterns that start with a *', (next) => {
+        try {
+            sh.mock("* echo *", "echo asterisks much");
+        } catch (e) {
+            next();
+        }
+    });
+    
     it('supports ssh', () => {
         shh`echo silence is gold`;
     });
