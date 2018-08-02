@@ -1,6 +1,6 @@
 # shellsync
 
-Synchronous shell scripting for Node.js and TypeScript.
+Synchronous shell scripting for Node.js.
 
 * **Pragmatic**: automate tasks using synchronous code, using familiar commands from the command line.
 * **Powerful**: use JavaScript or TypeScript functions, modules, libraries, and for constructs like try/catch/finally.
@@ -95,6 +95,8 @@ afterEach(() => sh.mockRestore());
 
 ### Uninterruptable sections
 
+> _"Please do not interrupt me while I'm ignoring you"_ – unknown author
+
 Users can press Control-C in CLI programs, which means they can end scripts
 halfway _any statement_. That means they can leave a system
 in an undefined state. In Node.js, Control-C even ends a program ignoring any `finally`
@@ -136,7 +138,7 @@ Execute a command, parse the result as JSON.
 
 ### sh.handleSignals({timeout = null}): void
 
-Disable processing of SIGINT/TERM/QUIT signals. Optionally accepts a `timeout` in milliseconds
+Disable processing of SIGINT/TERM/QUIT signals. Optionally accepts a `timeout` in milliseconds, or `null` for no timeout.
 
 When invoked, any signals pending since the last invocation get processed.
 
@@ -188,7 +190,7 @@ sh({input})`cat > file.txt`;
 
 ### shh\`command\`: string
 
-Same as sh.val; doesn't print anything to stdout or stderr.
+Same as `sh`; doesn't print anything to stdout or stderr.
 
 ## License
 
