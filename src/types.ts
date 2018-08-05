@@ -16,6 +16,8 @@ export interface ShellProperties {
     json: ShellFunction<JSON>;
     /** Execute a command, return true in case of success. */
     test: ShellFunction<boolean>;
+    /** Print a string to standard output. */
+    echo: (strings: TemplateStringsArray | string, ...args: TemplateVar[]) => void;
     /**
      * Define a mock: instead of `pattern`, run `command`.
      * Patterns consist of one or more words and support globbing from the second word, e.g.

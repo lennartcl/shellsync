@@ -76,6 +76,13 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
                 return false;
             }
         },
+        echo: (strings, ...args) => {
+            if (typeof strings === "string") return console.log([strings, ...args].join(" "));
+            console.log(strings.map((string, i) => {
+                if (i === strings.length - 1) return string;
+                return string + shellStringify(args[i]);
+            }).join(""));
+        },
         mock: (pattern, command) => {
             if (pattern.match(/([\\"')(\n\r\$!`&<>\.\$;])/))
                 throw new Error("Illegal character in pattern: " + RegExp.$1);
@@ -118,8 +125,7 @@ const quote: ShellFunction<string> = (commands, ...commandVars) => {
         return [commands, ...commandVars.map(shellStringify)].join(" ");
     }
     return commands.map((command, i) => {
-        if (i === commands.length - 1)
-            return command;
+        if (i === commands.length - 1) return command;
         return command + shellStringify(commandVars[i]);
     }).join("");
 }

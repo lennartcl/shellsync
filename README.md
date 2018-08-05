@@ -148,6 +148,10 @@ Re-enable processing of SIGINT/TERM/QUIT signals.
 
 When invoked, any signals pending since the last invocation get processed.
 
+### sh.echo`output`
+
+Print `output` to stdout.
+
 ### sh.mock(pattern, [command]): void
 
 Define a mock: instead of `pattern`, run `command`.
