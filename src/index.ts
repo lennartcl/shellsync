@@ -12,6 +12,12 @@ const metaStream = 3;
 const stdioDefault = [0, "pipe", "inherit", "pipe"];
 const stdioHushed = [0, "pipe", "pipe", "pipe"];
 const stdioOut = [0, "inherit", "inherit", "pipe"];
+enum ParseState {
+    BackTick,
+    Expression,
+    DoubleQuoted,
+    SingleQuoted,
+};
 
 function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): Shell {
     options.encoding = options.encoding || "utf8";
@@ -124,10 +130,54 @@ const quote: ShellFunction<string> = (commands, ...commandVars) => {
         console.warn("Warning: shellsync function invoked using string argument; please invoke using template literal syntax, e.g. sh `command`;")
         return [commands, ...commandVars.map(shellStringify)].join(" ");
     }
+
+    let parseState = {states: [] as ParseState[], shouldQuote: true};
     return commands.map((command, i) => {
         if (i === commands.length - 1) return command;
-        return command + shellStringify(commandVars[i]);
+        parseState = parseFragment(parseState.states, command);
+        if (commandVars[i] === undefined)
+            throw new Error("Undefined variable in `" + commands.join("${...}") + "`");
+        return command + (parseState.shouldQuote ? shellStringify(commandVars[i]) : commandVars[i]);
     }).join("");
+}
+
+/**
+ * Parse a shell fragment to determine whether variables inside it should be
+ * quoted or not. For example, shellsync will quote for
+ * `echo ${var}` but not for `echo "${var}"`.
+ */
+function parseFragment(states: ParseState[], fragment: string) {
+    const {BackTick, SingleQuoted, DoubleQuoted, Expression} = ParseState;
+    const process = (state: ParseState) => {
+        if (last() === state) return states.pop();
+        if (last() === SingleQuoted) return;
+        states.push(state);
+    };
+    const last = () => states[states.length - 1];
+    for (var i = 0; i < fragment.length; i++) {
+        switch (fragment[i]) {
+            case '\\':
+                i++; break;
+            case '`':
+                process(BackTick); break;
+            case '"':
+                process(DoubleQuoted); break;
+            case "'":
+                if (last() === DoubleQuoted) break;
+                process(SingleQuoted); break;
+            case '$':
+                if (fragment[i+1] !== '(') break;
+                if (last() == SingleQuoted) break;
+                states.push(Expression); break;
+            case ')':
+                if (last() !== Expression) break;
+                process(Expression); break;
+        }
+    }
+    return {
+        states,
+        shouldQuote: [SingleQuoted, DoubleQuoted].indexOf(last()) === -1,
+    };
 }
 
 function cleanShellOutput(output: string) {
