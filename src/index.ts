@@ -131,15 +131,20 @@ const quote: ShellFunction<string> = (commands, ...commandVars) => {
         return [commands, ...commandVars.map(shellStringify)].join(" ");
     }
 
-    let parseState = {states: [] as ParseState[], shouldEscape: true};
+    let parseState = {states: [] as ParseState[], shouldQuote: true};
     return commands.map((command, i) => {
         if (i === commands.length - 1) return command;
         parseState = parseFragment(parseState.states, command);
-        return command + (parseState.shouldEscape ? shellStringify(commandVars[i]) : commandVars[i]);
+        return command + (parseState.shouldQuote ? shellStringify(commandVars[i]) : commandVars[i]);
     }).join("");
 }
 
-/** @internal */
+/**
+ * Parse a shell fragment to determine whether variables inside it should be
+ * quoted or not. For example, shellsync will quote for
+ * `echo ${var}` but not for `echo "${var}"`.
+ * @internal
+ */
 export function parseFragment(states: ParseState[], fragment: string) {
     const {BackTick, SingleQuoted, DoubleQuoted, Expression} = ParseState;
     const process = (state: ParseState) => {
@@ -170,7 +175,7 @@ export function parseFragment(states: ParseState[], fragment: string) {
     }
     return {
         states,
-        shouldEscape: [SingleQuoted, DoubleQuoted].indexOf(last()) === -1,
+        shouldQuote: [SingleQuoted, DoubleQuoted].indexOf(last()) === -1,
     };
 }
 

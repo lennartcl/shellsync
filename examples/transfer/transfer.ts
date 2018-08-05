@@ -11,7 +11,6 @@ import fs from "fs";
 let configuredDownloadClient = "";
 let configuredUploadClient = "";
 let currentVersion="1.22.0";
-let down = false;
 let response;
 
 /** This function determines which http get tool the system has installed and returns an error if there isnt one. */
@@ -82,15 +81,15 @@ function singleDownload(targetPath, path, file) {
 
 function httpSingleUpload(sourcePath, filename) {
     switch (configuredUploadClient) {
-        case "curl": response=sh`curl -A curl --progress --upload-file ${sourcePath} "https://transfer.sh/${filename}`;
-        case "wget": response=sh`wget --progress=dot --method PUT --body-file=${sourcePath} "https://transfer.sh/${filename}`;
+        case "curl": response = sh`curl -A curl --progress --upload-file ${sourcePath} "https://transfer.sh/${filename}`;
+        case "wget": response = sh`wget --progress=dot --method PUT --body-file=${sourcePath} "https://transfer.sh/${filename}`;
     }
     echo`Success!`;
 }
 
-function printUploadResponse(tempFileName) {
+function printUploadResponse(filename) {
     const fileID = sh`(echo ${response} | cut -d "/" -f 4)`;
-    echo`Transfer Download Command: transfer -d desiredOutputDirectory ${fileID} ${tempFileName}`;
+    echo`Transfer Download Command: transfer -d <desiredOutputDirectory> ${fileID} ${filename}`;
     echo`Transfer File URL: ${response}`;
 }
 
@@ -104,11 +103,12 @@ function singleUpload(sourcePath) {
     let filename = sourcePath.replace(/.*\\/, "");
     echo`Uploading ${filename}`;
     httpSingleUpload(sourcePath, filename);
+    return filename;
 }
 
 function onetimeUpload(sourcePath) {
     response = sh`curl -A curl -s -F "file=@${sourcePath}" http://ki.tc/file/u/`;
-    return sh`echo $response | python -c "import sys, json; print json.load(sys.stdin)['file']['download_page']`;
+    return sh`echo ${response} | python -c "import sys, json; print json.load(sys.stdin)['file']['download_page']`;
 }
 
 function usage() {
@@ -130,78 +130,39 @@ Examples:
 `;
 }
 
-while getopts "o:d:vh" opt; do
-  case "$opt" in
-    \?) echo "Invalid option: -$OPTARG" >&2
-      exit 1
-    ;;
-    h)  usage
-      exit 0
-    ;;
-    v)  echo "Version $currentVersion"
-      exit 0
-    ;;
-    ;;
-    o)
-      onetime="true"
-    ;;
-    d)
-      down="true"
-      if [ $# -lt 4 ];then { echo "Error: not enough arguments for downloading a file, see the usage"; return 1;};fi
-      if [ $# -gt 4 ];then { echo "Error: to many enough arguments for downloading a file, see the usage"; return 1;};fi
-      inputFilePath=$(echo "$*" | sed s/-d//g | sed s/-o//g | cut -d " " -f 2)
-      inputID=$(echo "$*" | sed s/-d//g | sed s/-o//g | cut -d " " -f 3)
-      inputFileName=$(echo "$*" | sed s/-d//g | sed s/-o//g | cut -d " " -f 4)
-    ;;
-    :)  echo "Option -$OPTARG requires an argument." >&2
-      exit 1
-    ;;
-  esac
-done
-
-if [[ $# == "0" ]]; then
-  usage
-  exit 0
-elif [[ $# == "1" ]];then
-  if [[ $1 == "help" ]]; then
-    usage
-    exit 0
-  elif [ -f $1 ];then
-    getConfiguredDownloadClient || exit 1
-    checkInternet || exit 1
-    getConfiguredUploadClient || exit 1
-    singleUpload "$1" || exit 1
-    printUploadResponse
-    exit 0
-  else
-    echo "Error: invalid filepath"
-    exit 1
-  fi
-else
-  if $down && ! $onetime ;then
-    getConfiguredDownloadClient || exit 1
-    checkInternet || exit 1
-    getConfiguredDownloadClient || exit 1
-    singleDownload "$inputFilePath" "$inputID" "$inputFileName" || exit 1
-    exit 0
-  elif ! $down && ! $onetime; then
-    getConfiguredDownloadClient || exit 1
-    checkInternet || exit 1
-    getConfiguredUploadClient || exit 1
-    for path in "$@";do
-      singleUpload "$path" || exit 1
-      printUploadResponse
-      echo
-    done
-    exit 0
-  elif ! $down && $onetime; then
-    getConfiguredDownloadClient || exit 1
-    if [[ $configuredDownloadClient -ne "curl" ]];then
-      echo "Error: curl must be installed to use one time file upload"
-      exit 1
-    fi
-    inputFileName=$(echo "$*" | sed s/-o//g | cut -d " " -f 2 )
-    let downlink = onetimeUpload "$inputFileName"
-    printOntimeUpload(downlink);
-  fi
-fi
+let onetime = false;
+let down = false;
+let arg = process.argv[1];
+if (!arg) usage();
+switch (arg) {
+    case "-v":
+        echo`Version ${currentVersion}`;
+        break;
+    case "-o":
+        getConfiguredDownloadClient();
+        if (configuredDownloadClient !== "curl")
+            throw new Error("curl must be installed to use one time file upload");
+        let downlink = onetimeUpload(process.argv[2]);
+        printOntimeUpload(downlink);
+        break;
+    case "-d":
+        if (process.argv.length < 5) { echo`Error: not enough arguments for downloading a file, see the usage`; process.exit(1); }
+        if (process.argv.length > 5) { echo`Error: too many enough arguments for downloading a file, see the usage`; process.exit(1); }
+        singleDownload(process.argv[2], process.argv[3], process.argv[4]);
+        break;
+    default:
+        for (let i = 1; i < process.argv.length; i++) {
+            let file = process.argv[i];
+            if (!fs.statSync(file).isFile) {
+                if (/^-/.test(arg)) usage();
+                else echo`File not found: ${arg}`;
+                process.exit(1);
+            }
+            getConfiguredDownloadClient();
+            checkInternet();
+            getConfiguredUploadClient();
+            let filename = singleUpload(file);
+            printUploadResponse(filename);
+            continue;
+        }
+}
