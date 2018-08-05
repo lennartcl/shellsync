@@ -12,6 +12,13 @@ const metaStream = 3;
 const stdioDefault = [0, "pipe", "inherit", "pipe"];
 const stdioHushed = [0, "pipe", "pipe", "pipe"];
 const stdioOut = [0, "inherit", "inherit", "pipe"];
+enum ParseState {
+    BackTick,
+    Expression,
+    DoubleQuoted,
+    SingleQuoted,
+    Escape,
+};
 
 function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): Shell {
     options.encoding = options.encoding || "utf8";
@@ -124,8 +131,28 @@ const quote: ShellFunction<string> = (commands, ...commandVars) => {
         console.warn("Warning: shellsync function invoked using string argument; please invoke using template literal syntax, e.g. sh `command`;")
         return [commands, ...commandVars.map(shellStringify)].join(" ");
     }
+
+    let states: ParseState[] = [];
+    const tryPush = (state: ParseState) => {
+        if (states[-1] === ParseState.Escape) return states.pop();
+        states.push(state);
+    }
     return commands.map((command, i) => {
         if (i === commands.length - 1) return command;
+
+        for (let char of command) {
+            switch (char) {
+                case '\\':
+                    if (states[-1] === ParseState.SingleQuoted) break;
+                    states.push(ParseState.Escape); break;
+                case '`':
+                    tryPush(ParseState.BackTick); break;
+                case '"':
+                    tryPush(ParseState.DoubleQuoted); break;
+                case "'":
+                    tryPush(ParseState.SingleQuoted); break;
+            }
+        }
         return command + shellStringify(commandVars[i]);
     }).join("");
 }
