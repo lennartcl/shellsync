@@ -17,7 +17,6 @@ enum ParseState {
     Expression,
     DoubleQuoted,
     SingleQuoted,
-    Escape,
 };
 
 function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): Shell {
@@ -132,29 +131,47 @@ const quote: ShellFunction<string> = (commands, ...commandVars) => {
         return [commands, ...commandVars.map(shellStringify)].join(" ");
     }
 
-    let states: ParseState[] = [];
-    const tryPush = (state: ParseState) => {
-        if (states[-1] === ParseState.Escape) return states.pop();
-        states.push(state);
-    }
+    let parseState = {states: [] as ParseState[], shouldEscape: true};
     return commands.map((command, i) => {
         if (i === commands.length - 1) return command;
-
-        for (let char of command) {
-            switch (char) {
-                case '\\':
-                    if (states[-1] === ParseState.SingleQuoted) break;
-                    states.push(ParseState.Escape); break;
-                case '`':
-                    tryPush(ParseState.BackTick); break;
-                case '"':
-                    tryPush(ParseState.DoubleQuoted); break;
-                case "'":
-                    tryPush(ParseState.SingleQuoted); break;
-            }
-        }
-        return command + shellStringify(commandVars[i]);
+        parseState = parseFragment(parseState.states, command);
+        return command + (parseState.shouldEscape ? shellStringify(commandVars[i]) : commandVars[i]);
     }).join("");
+}
+
+/** @internal */
+export function parseFragment(states: ParseState[], fragment: string) {
+    const {BackTick, SingleQuoted, DoubleQuoted, Expression} = ParseState;
+    const process = (state: ParseState) => {
+        if (last() === state) return states.pop();
+        if (last() === SingleQuoted) return;
+        states.push(state);
+    };
+    const last = () => states[states.length - 1];
+    for (var i = 0; i < fragment.length; i++) {
+        switch (fragment[i]) {
+            case '\\':
+                console.log("ESCAPE")
+                i++; break;
+            case '`':
+                process(BackTick); break;
+            case '"':
+                process(DoubleQuoted); break;
+            case "'":
+                process(SingleQuoted); break;
+            case '$':
+                if (fragment[i+1] !== '(') break;
+                if (last() == SingleQuoted) break;
+                states.push(Expression); break;
+            case ')':
+                if (last() !== Expression) break;
+                process(Expression); break;
+        }
+    }
+    return {
+        states,
+        shouldEscape: [SingleQuoted, DoubleQuoted].indexOf(last()) === -1,
+    };
 }
 
 function cleanShellOutput(output: string) {

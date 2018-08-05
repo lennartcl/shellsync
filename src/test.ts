@@ -54,45 +54,45 @@ describe('#quote', () => {
     });
 
     it("supports arguments inside single-quoted areas", () => {
-        const hello = "hello";
-        const escaped = quote`bash -c 'echo ${hello}'`;
-        assert.equal(escaped, `bash -c 'echo hello'`);
+        const foobar = "foo bar";
+        const escaped = quote`echo 'echo ${foobar}'`;
+        assert.equal(escaped, `echo 'echo foo bar'`);
     });
 
     it("supports arguments inside double-quoted areas", () => {
-        const hello = "hello";
-        const escaped = quote`bash -c "echo ${hello}"`;
-        assert.equal(escaped, `bash -c "echo hello"`);
+        const foobar = "foo bar";
+        const escaped = quote`echo "echo ${foobar}"`;
+        assert.equal(escaped, `echo "echo foo bar"`);
     });
 
     it("supports arguments with escaped quotes", () => {
-        const hello = "hello";
-        const escaped = quote`bash -c \"echo ${hello}\"`;
-        assert.equal(escaped, `bash -c \"echo 'hello'"`);
+        const foobar = "foo bar";
+        const escaped = quote`echo \\"echo ${foobar}\\"`;
+        assert.equal(escaped, `echo \\"echo 'foo bar'\\"`);
     });
 
     it("supports arguments with shell expressions in quotes", () => {
-        const hello = "hello";
-        const escaped = quote`bash -c "echo $(${hello})"`;
-        assert.equal(escaped, `bash -c "echo $('hello')"`);
+        const foobar = "foo bar";
+        const escaped = quote`echo "echo $(${foobar})"`;
+        assert.equal(escaped, `echo "echo $('foo bar')"`);
     });
 
     it("supports arguments with backtick expressions in quotes", () => {
-        const hello = "hello";
-        const escaped = quote`bash -c "echo \`${hello})\``;
-        assert.equal(escaped, `bash -c "echo \`$('hello')\``);
+        const foobar = "foo bar";
+        const escaped = quote`echo "echo \`${foobar}\``;
+        assert.equal(escaped, `echo "echo \`'foo bar'\``);
     });
 
     it("supports arguments with quotes in shell expressions in quotes", () => {
-        const hello = "hello";
-        const escaped = quote`bash -c "echo $("${hello}")"`;
-        assert.equal(escaped, `bash -c "echo $("hello")"`);
+        const foobar = "foo bar";
+        const escaped = quote`echo "echo $("${foobar}")"`;
+        assert.equal(escaped, `echo "echo $("foo bar")"`);
     });
 
     it("supports arguments with quotes in shell expressions in shell expressions", () => {
-        const hello = "hello";
-        const escaped = quote`bash -c "echo $($("${hello}"))"`;
-        assert.equal(escaped, `bash -c "echo $($("hello"))"`);
+        const foobar = "foo bar";
+        const escaped = quote`echo "echo $($("${foobar}"))"`;
+        assert.equal(escaped, `echo "echo $($("foo bar"))"`);
     });
 });
 
