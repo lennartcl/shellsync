@@ -290,6 +290,30 @@ describe('#createShell', () => {
         }
     });
     
+    it('supports mocks that use return 1', (next) => {
+        // sh.options.debug = true;
+        sh.mock("foo", "return 1");
+        try {
+            sh`foo`;
+        } catch (e) {
+            next();
+        }
+    });
+    
+    it('supports mocks that use exit 1', (next) => {
+        sh.mock("foo", "exit 1");
+        try {
+            sh`foo`;
+        } catch (e) {
+            next();
+        }
+    });
+    
+    it('supports mocks for command -v', () => {
+        sh.mock("command -v curl", "echo ok");
+        assert.equal(sh`command -v curl`, "ok");
+    });
+    
     it('supports ssh', () => {
         shh`echo silence is gold`;
     });

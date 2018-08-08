@@ -215,23 +215,23 @@ class UnquotedPart {
 }
 
 function wrapShellCommand(command: string, mocks: MockCommand[], debug = false) {
-    const setXtrace = debug ? `set -x` : ``;
+    const setXtrace = debug ? `builtin set -x` : ``;
     return `:
         # Mock definitions
         __execMock() {
-            { set +x; } 2>/dev/null
+            { builtin set +x; } 2>/dev/null
             case "$@" in
             ${mocks.map(m => `
                 ${m.pattern})
-                    shift;
-                    ( ${m.name}() { command ${m.name} "$@"; }
+                    builtin shift;
+                    ( ${m.name}() { builtin command ${m.name} "$@"; }
                       ${setXtrace}
                       : mock for ${m.name} :
                       ${m.command}
                     )
                     ;;
             `).join("\n")}
-            *) command "$@" ;;
+            *) builtin command "$@" ;;
             esac
         }
         export -f __execMock
@@ -239,15 +239,16 @@ function wrapShellCommand(command: string, mocks: MockCommand[], debug = false) 
         # Functions to intercept mocked commands
         ${mocks.map(m => `
             ${m.name}() { __execMock ${m.name} "$@"; }
-            export -f ${m.name}
+            builtin export -f ${m.name}
         `).join("\n")}
 
         ${setXtrace}
         ${command}
-        { RET=$?; set +x; } 2>/dev/null
+        { RET=$?; builtin set +x; } 2>/dev/null
 
         # Capture current directory
-        command printf "$PWD">&${metaStream}; exit $RET
+        builtin command printf "$PWD">&${metaStream}
+        builtin exit $RET
     `;
 }
 
