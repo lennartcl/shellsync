@@ -83,11 +83,13 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
             }
         },
         echo: (strings, ...args) => {
-            if (typeof strings === "string") return console.log([strings, ...args].join(" "));
-            console.log(strings.map((string, i) => {
+            const value = strings.map((string, i) => {
                 if (i === strings.length - 1) return string;
                 return string + shellStringify(args[i]);
-            }).join(""));
+            }).join("");
+            if (mocks.find(m => m.name === "echo"))
+                return sh`echo ${value}`;
+            console.log(value);
         },
         mock: (pattern, command) => {
             if (pattern.match(/([\\"')(\n\r\$!`&<>\.\$;])/))

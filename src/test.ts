@@ -426,4 +426,14 @@ describe('#createShell', () => {
         sh`echo still works`;
         assert.equal(output, "works");
     });
+
+    it("uses console.log for echo``", (next) => {
+        const oldLog = console.log;
+        console.log = (output: any) => {
+            console.log = oldLog;
+            assert.equal(output, "hello")
+            next();
+        };
+        sh.echo`hello`;
+    });
 });
