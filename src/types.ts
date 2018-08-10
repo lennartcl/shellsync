@@ -30,7 +30,7 @@ export interface ShellProperties {
      * `git`, `git status`, `git s*`. The most specific pattern is used in case multiple
      * mocks are defined.
      */
-    mock(pattern: string, command?: string): void;
+    mock(pattern: string, command?: string): Mock;
 
     mockAllCommands(): void,
 
@@ -90,4 +90,9 @@ export interface MockCommand {
     patternEscaped: string;
     patternLength: number;
     command: string;
+    mock: Mock;
+}
+
+export interface Mock {
+    called: number;
 }

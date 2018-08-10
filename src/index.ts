@@ -4,14 +4,15 @@
  *----------------------------------------------------------------------------------------------*/
 import * as child_process from "child_process";
 import {SpawnSyncReturns, SpawnSyncOptionsWithStringEncoding} from "child_process";
-import {Shell, ShellFunction, MockCommand, ShellOptions, TemplateError, ShellProperties, CreateShellFunction, TemplateVar} from "./types";
+import {Shell, ShellFunction, MockCommand, Mock, ShellOptions, TemplateError, ShellProperties, CreateShellFunction, TemplateVar} from "./types";
 import {existsSync} from "fs";
 import {handleSignals, handleSignalsEnd, parseEmittedSignal, wrapDisableInterrupts, isHandleSignalsActive} from "./handle_signals";
 const shellEscape = require("any-shell-escape");
 const metaStream = 3;
-const stdioDefault = [0, "pipe", "inherit", "pipe"];
-const stdioHushed = [0, "pipe", "pipe", "pipe"];
-const stdioOut = [0, "inherit", "inherit", "pipe"];
+const mockStream = 4;
+const stdioDefault = [0, "pipe", "inherit", "pipe", "pipe"];
+const stdioHushed = [0, "pipe", "pipe", "pipe", "pipe"];
+const stdioOut = [0, "inherit", "inherit", "pipe", "pipe"];
 enum ParseState {
     BackTick,
     Expression,
@@ -48,6 +49,9 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
             shell.options.cwd = output[metaStream];
         if (options.debug && stderr)
             console.error(cleanShellOutput(stderr));
+
+        if (output && output[mockStream])
+            output[mockStream].split("\0").forEach(reportMockCalled);
 
         if (status) {
             throw Object.assign(
@@ -103,10 +107,12 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
                 patternEscaped: pattern.replace(/\s/g, "\\ "),
                 patternLength: pattern.replace(/\*$/, "").length,
                 command: command || "",
+                mock: {called: 0}
             };
             validateSyntax(mock);
             mocks.push(mock);
             mocks.sort((a, b) => b.patternLength - a.patternLength);
+            return mock.mock;
         },
         mockAllCommands: () => {
             options.mockAllCommands = true;
@@ -131,6 +137,11 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
         for (let i = mocks.length - 1; i >= 0; i--) {
             if (mocks[i].pattern.match(patternRegExp))
                 mocks.splice(i, 1);
+        }
+    };
+    const reportMockCalled = (pattern: string) => {
+        for (let mock of mocks) {
+            if (mock.pattern === pattern) mock.mock.called++
         }
     };
     const validateSyntax = (mock: MockCommand): void => {
@@ -250,6 +261,7 @@ function wrapShellCommand(command: string, options: ShellOptions, mocks: MockCom
                 ${m.patternEscaped})
                     builtin shift;
                     ( ${m.name}() { builtin command ${m.name} "$@"; }
+                      builtin printf '\\0${m.pattern}\\0' >&${mockStream}
                       ${startDebugTrace}
                       : mock for ${m.name} :
                       ${m.command}
@@ -301,8 +313,8 @@ function mockAllCommands(options: ShellOptions, mocks: MockCommand[], startDebug
             ${mocks.map(m => `
                 ${m.patternEscaped}) ;;
             `).join("\n")}
-                 *) builtin printf "\\0\\0" >&3
-                    builtin echo "Unmocked command: $COMMAND" >&3
+                 *) builtin printf "\\0\\0" >&${metaStream}
+                    builtin echo "Unmocked command: $COMMAND" >&${metaStream}
                     builtin exit 1
             esac
         }

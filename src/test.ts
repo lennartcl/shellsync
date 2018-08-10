@@ -4,7 +4,7 @@ import defaultExportSh from "./index";
 import {sh} from "./index";
 import {shh} from "./index";
 
-const stdioDefault = [0, "pipe", "inherit", "pipe"];
+const stdioDefault = [0, "pipe", "inherit", "pipe", "pipe"];
 const consoleLog = console.log;
 const consoleError = console.error;
 
@@ -340,6 +340,17 @@ describe('#createShell', () => {
         sh.mock("command -v curl", "echo ok");
         assert.equal(sh`command -v curl`, "ok");
     });
+
+    it("can keep track of calls to mocks", () => {
+        let mockHello = sh.mock("hello");
+        let mockBye = sh.mock("bye");
+        assert.equal(mockHello.called, 0);
+        sh`hello`;
+        assert.equal(mockHello.called, 1);
+        sh`hello; bye; hello`;
+        assert.equal(mockHello.called, 3);
+        assert.equal(mockBye.called, 1);
+    });
     
     it('supports ssh', () => {
         shh`echo silence is gold`;
@@ -523,7 +534,7 @@ describe("#mockEverything", () => {
 
     it("prints minimal output when debug and mocking are used together", (next) => {
         sh.options.debug = true;
-        sh.options.stdio = [0, "pipe", "pipe", "pipe"];
+        sh.options.stdio = [0, "pipe", "pipe", "pipe", "pipe"];
         console.error = (arg: string) => {
             assert.equal(arg, "+ ls\n+ : mock for ls :");
             next();

@@ -85,8 +85,9 @@ it("mocks git status", () => {
 });
 
 it("mocks arbitrary git command", () => {
-    sh.mock("git *", `echo git command called: $1`);
+    let mock = sh.mock("git *", `echo git command called: $1`);
     assert.equal(sh`git foo`, "git command called: foo");
+    assert(mock.called);
 });
 
 // Restore all mocked commands
@@ -152,7 +153,7 @@ When invoked, any signals pending since the last invocation get processed.
 
 Print `output` to stdout.
 
-### sh.mock(pattern, [command]): void
+### sh.mock(pattern, [command]): Mock
 
 Define a mock: instead of `pattern`, run `command`.
 Patterns consist of one or more words and support globbing from the second word, e.g.
@@ -200,6 +201,14 @@ sh({input})`cat > file.txt`;
 ### shh\`command\`: string
 
 Same as `sh`; doesn't print anything to stdout or stderr.
+
+### Mock
+
+A mock object.
+
+#### Mock.called: number
+
+Indicates how often this mock was called.
 
 ## License
 
