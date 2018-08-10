@@ -248,6 +248,28 @@ describe('#createShell', () => {
         assert.equal(sh`foo x`, `foo x`);
         assert.equal(sh`foo`, `foo`);
     });
+
+    it("supports mockRestore(mock)", () => {
+        sh.mock("echo hello", "echo mock-1");
+        sh.mock("echo *", "echo mock-2");
+        assert.equal(sh`echo hello`, "mock-1");
+        sh.mockRestore("echo *");
+        assert.equal(sh`echo hello`, "hello");
+        assert.equal(sh`echo bye`, "bye");
+    });
+
+    it("supports mockRestore(mock) with shared state between sh and shh", () => {
+        sh.mock("echo *", "echo mock-1");
+        assert.equal(shh`echo hello`, "mock-1");
+        sh.mockRestore("echo *");
+        assert.equal(shh`echo hello`, "hello");
+    });
+
+    it("supports mockRestore(mock) with mockAllCommand()", () => {
+        sh.mockAllCommands();
+        sh.mockRestore("echo *");
+        assert.equal(sh`echo hello`, "hello");
+    });
     
     it('only captures specific patterns for mocks', () => {
         sh.mock("pwd mocked", `echo mocked`);

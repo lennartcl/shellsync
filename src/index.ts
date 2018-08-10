@@ -99,7 +99,8 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
                 throw new Error("Illegal character in pattern: " + RegExp.$1);
             const mock = {
                 name: pattern.split(" ")[0],
-                pattern: pattern.replace(/\s/g, "\\ "),
+                pattern,
+                patternEscaped: pattern.replace(/\s/g, "\\ "),
                 patternLength: pattern.replace(/\*$/, "").length,
                 command: command || "",
             };
@@ -110,12 +111,27 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
         mockAllCommands: () => {
             options.mockAllCommands = true;
         },
-        mockRestore: () => {
-            options.mockAllCommands = false;
-            mocks.splice(0, mocks.length);
+        mockRestore: (pattern?) => {
+            if (!pattern) {
+                options.mockAllCommands = false;
+                mocks.splice(0, mocks.length);
+                return;
+            }
+            if (!pattern.match(/^[A-Za-z0-9_$-]*\*?/))
+                throw new Error("Unsupported mockRestore pattern: " + pattern);
+            removeMock(pattern);
+            if (options.mockAllCommands)
+                shell.mock(pattern, `${pattern.split(" ")[0]} "$@"`);
         },
         handleSignals,
         handleSignalsEnd,
+    };
+    const removeMock = (pattern: string) => {
+        let patternRegExp = new RegExp(pattern.replace(/\*/, ".*"));
+        for (let i = mocks.length - 1; i >= 0; i--) {
+            if (mocks[i].pattern.match(patternRegExp))
+                mocks.splice(i, 1);
+        }
     };
     const validateSyntax = (mock: MockCommand): void => {
         try {
@@ -231,7 +247,7 @@ function wrapShellCommand(command: string, options: ShellOptions, mocks: MockCom
         __execMock() {
             case "$@" in
             ${mocks.map(m => `
-                ${m.pattern})
+                ${m.patternEscaped})
                     builtin shift;
                     ( ${m.name}() { builtin command ${m.name} "$@"; }
                       ${startDebugTrace}
@@ -278,12 +294,12 @@ function mockAllCommands(options: ShellOptions, mocks: MockCommand[], startDebug
     const setupMockAllCommands = `
         __failOnUnmocked() {
             local COMMAND=\${BASH_COMMAND-$3}
-            if [[ $COMMAND =~ ^(builtin|[{]|RET=\\$?|:$) ]]; then
+            if [[ $COMMAND =~ ^(builtin|return|exit|[{]|RET=\\$?|:$) ]]; then
                 return
             fi
             case "$COMMAND" in
             ${mocks.map(m => `
-                ${m.pattern}) ;;
+                ${m.patternEscaped}) ;;
             `).join("\n")}
                  *) builtin printf "\\0\\0" >&3
                     builtin echo "Unmocked command: $COMMAND" >&3

@@ -159,9 +159,14 @@ Patterns consist of one or more words and support globbing from the second word,
 `git`, `git status`, `git s*`. The longest (most specific) pattern is used in case multiple
 mocks are defined.
 
-### sh.mockRestore(): void
+### sh.mockRestore(pattern?): void
 
-Remove all mocks.
+Remove all mocks. When `pattern` is specified, remove a single mock.
+
+### sh.mockAllCommands(): void
+
+Force mocks for all shell commands, throwing an error when an unmocked command is used.
+Does not handle commands in subshells or shell functions.
 
 ### sh.quote\`command\`: string
 

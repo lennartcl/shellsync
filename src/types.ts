@@ -35,7 +35,7 @@ export interface ShellProperties {
     mockAllCommands(): void,
 
     /** Remove all mocks. */
-    mockRestore(): void;
+    mockRestore(pattern?: string): void;
 
     /**
      * Disable or delay processing of SIGINT/TERM/QUIT signals. Also, process any pending signals.
@@ -87,6 +87,7 @@ export type CreateShellFunction = (options?: ShellOptions) => Shell;
 export interface MockCommand {
     name: string;
     pattern: string;
+    patternEscaped: string;
     patternLength: number;
     command: string;
 }
