@@ -484,6 +484,15 @@ describe("#mockEverything", () => {
         }
     });
 
+    it("throws for unmocked with sh.test", (next) => {
+        sh.mockAllCommands();
+        try {
+            sh.test`ls`;
+        } catch {
+            next();
+        }
+    });
+
     it("doesn't throw with mocks in place", () => {
         sh.mockAllCommands();
         sh.mock("ls");

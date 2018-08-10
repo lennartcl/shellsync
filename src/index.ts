@@ -41,7 +41,7 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
         const {output, stdout, stderr, status, error} = child;
         
         if (output && output[metaStream].startsWith("\0\0"))
-            throw new Error(output[metaStream].substr(2));
+            throw Object.assign(new Error(output[metaStream].substr(2)), {code: "EMOCK"});
         if (output && output[metaStream].startsWith("\0"))
             parseEmittedSignal(output[metaStream]);
         else if (output && output[metaStream])
@@ -80,7 +80,8 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
             try {
                 exec({stdio: stdioHushed}, commands, ...commandVars);
                 return true;
-            } catch {
+            } catch (e) {
+                if (e.code === "EMOCK") throw e;
                 return false;
             }
         },
