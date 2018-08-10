@@ -30,7 +30,7 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
         const shellProcess = typeof options.shell === "string" ? options.shell : "/bin/bash";
         
         let command = quote(commands, ...commandVars);
-        command = wrapShellCommand(command, mocks, options.debug);
+        command = wrapShellCommand(command, options, mocks);
         if (isHandleSignalsActive()) command = wrapDisableInterrupts(command);
         
         const childOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
@@ -40,7 +40,9 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
         child = child_process.spawnSync(shellProcess, ["-c", command], childOptions);
         const {output, stdout, stderr, status, error} = child;
         
-        if (output && output[metaStream][0] === "\0")
+        if (output && output[metaStream].startsWith("\0\0"))
+            throw new Error(output[metaStream].substr(2));
+        if (output && output[metaStream].startsWith("\0"))
             parseEmittedSignal(output[metaStream]);
         else if (output && output[metaStream])
             shell.options.cwd = output[metaStream];
@@ -104,7 +106,11 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
             mocks.push(mock);
             mocks.sort((a, b) => b.patternLength - a.patternLength);
         },
+        mockAllCommands: () => {
+            options.mockAllCommands = true;
+        },
         mockRestore: () => {
+            options.mockAllCommands = false;
             mocks.splice(0, mocks.length);
         },
         handleSignals,
@@ -214,18 +220,20 @@ class UnquotedPart {
     }
 }
 
-function wrapShellCommand(command: string, mocks: MockCommand[], debug = false) {
-    const setXtrace = debug ? `builtin set -x` : ``;
+function wrapShellCommand(command: string, options: ShellOptions, mocks: MockCommand[]) {
+    const startDebugTrace = options.debug ? `{ builtin set -x; } 2>/dev/null` : `:`;
+    const stopDebugTrace = options.debug ? `{ builtin set +x; } 2>/dev/null` : `:`;
+    const {startMockAllCommands, stopMockAllCommands, setupMockAllCommands} =
+        mockAllCommands(options, mocks, startDebugTrace, stopDebugTrace);
     return `:
         # Mock definitions
         __execMock() {
-            { builtin set +x; } 2>/dev/null
             case "$@" in
             ${mocks.map(m => `
                 ${m.pattern})
                     builtin shift;
                     ( ${m.name}() { builtin command ${m.name} "$@"; }
-                      ${setXtrace}
+                      ${startDebugTrace}
                       : mock for ${m.name} :
                       ${m.command}
                     )
@@ -238,18 +246,51 @@ function wrapShellCommand(command: string, mocks: MockCommand[], debug = false) 
 
         # Functions to intercept mocked commands
         ${mocks.map(m => `
-            ${m.name}() { __execMock ${m.name} "$@"; }
+            ${m.name}() { ${stopDebugTrace}; __execMock ${m.name} "$@"; }
             builtin export -f ${m.name}
         `).join("\n")}
 
-        ${setXtrace}
+        ${setupMockAllCommands}
+        ${startMockAllCommands}
+        ${startDebugTrace}
         ${command}
-        { RET=$?; builtin set +x; } 2>/dev/null
+        { RET=$?; } 2>/dev/null
+        ${stopMockAllCommands}
+        ${stopDebugTrace}
 
         # Capture current directory
         builtin command printf "$PWD">&${metaStream}
         builtin exit $RET
     `;
+}
+
+function mockAllCommands(options: ShellOptions, mocks: MockCommand[], startDebugTrace: string, stopDebugTrace: string) {
+    if (!options.mockAllCommands)
+        return {stopMockAllCommands: "", startMockAllCommands: "", setupMockAllCommands: ""};
+    
+    const stopMockAllCommands = `
+        { builtin trap - DEBUG; } 2>/dev/null
+    `;
+    const startMockAllCommands = `
+        builtin trap "${stopDebugTrace}; __failOnUnmocked; ${startDebugTrace}" DEBUG
+    `;
+    const setupMockAllCommands = `
+        __failOnUnmocked() {
+            local COMMAND=\${BASH_COMMAND-$3}
+            if [[ $COMMAND =~ ^(builtin|[{]|RET=\\$?|:$) ]]; then
+                return
+            fi
+            case "$COMMAND" in
+            ${mocks.map(m => `
+                ${m.pattern}) ;;
+            `).join("\n")}
+                 *) builtin printf "\\0\\0" >&3
+                    builtin echo "Unmocked command: $COMMAND" >&3
+                    builtin exit 1
+            esac
+        }
+    `;
+    return {setupMockAllCommands, stopMockAllCommands, startMockAllCommands}
 }
 
 const sharedMocks: MockCommand[] = [];

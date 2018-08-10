@@ -4,6 +4,10 @@ import defaultExportSh from "./index";
 import {sh} from "./index";
 import {shh} from "./index";
 
+const stdioDefault = [0, "pipe", "inherit", "pipe"];
+const consoleLog = console.log;
+const consoleError = console.error;
+
 describe('#quote', () => {
     it('supports strings without args', () => {
         const escaped = quote(`foo "bar"` as any);
@@ -106,6 +110,8 @@ describe('#quote', () => {
 
 describe('#createShell', () => {
     afterEach(() => {
+        console.log = consoleLog;
+        console.error = consoleError;
         sh.mockRestore();
         sh.handleSignalsEnd();
     });
@@ -291,7 +297,6 @@ describe('#createShell', () => {
     });
     
     it('supports mocks that use return 1', (next) => {
-        // sh.options.debug = true;
         sh.mock("foo", "return 1");
         try {
             sh`foo`;
@@ -452,12 +457,66 @@ describe('#createShell', () => {
     });
 
     it("uses console.log for echo``", (next) => {
-        const oldLog = console.log;
-        console.log = (output: any) => {
-            console.log = oldLog;
+        console.log = (output: string) => {
+            console.log = consoleLog;
             assert.equal(output, "hello")
             next();
         };
         sh.echo`hello`;
     });
 });
+
+describe("#mockEverything", () => {
+    afterEach(() => {
+        sh.options.debug = false;
+        sh.mockRestore();
+        sh.options.stdio = stdioDefault;
+        console.log = consoleLog;
+        console.error = consoleError;
+    });
+
+    it("throws for unmocked commands", (next) => {
+        sh.mockAllCommands();
+        try {
+            sh`ls`;
+        } catch {
+            next();
+        }
+    });
+
+    it("doesn't throw with mocks in place", () => {
+        sh.mockAllCommands();
+        sh.mock("ls");
+        sh`ls`;
+    });
+
+    it("prints minimal output when debug and mocking are used together", (next) => {
+        sh.options.debug = true;
+        sh.options.stdio = [0, "pipe", "pipe", "pipe"];
+        console.error = (arg: string) => {
+            assert.equal(arg, "+ ls\n+ : mock for ls :");
+            next();
+        }
+        sh.mockAllCommands();
+        sh.mock("ls");
+        sh`ls`;
+    });
+
+    it("supports multiple subsequent mocked commands", () => {
+        sh.mock("pwd")
+        sh.mock("ls")
+        sh.mockAllCommands();
+        sh.out`pwd; ls`;
+    });
+
+    it("throws for unmocked commands after properly mocked ones", (next) => {
+        sh.mock("pwd")
+        sh.mockAllCommands();
+        try {
+            sh`pwd; ls`;
+        } catch (e) {
+            assert.equal(e.message, "Unmocked command: ls\n");
+            next();
+        }
+    });
+})

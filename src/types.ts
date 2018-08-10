@@ -5,19 +5,25 @@ export interface Shell extends ShellProperties, ShellFunction<string>, CreateShe
 export interface ShellProperties {
     /** Options for this shell. */
     options: ShellOptions;
+
     /** Execute a command, print stdout and stderr. */
     out: ShellFunction<void>;
+
     /**
      * Execute a command, return stdout split by null characters (if found) or by newline characters.
      * Use `sh.options.fieldSeperator` to pick a custom delimiter character.
      */
     array: ShellFunction<string[]>;
+
     /** Execute a command, parse the result as JSON. */
     json: ShellFunction<JSON>;
+
     /** Execute a command, return true in case of success. */
     test: ShellFunction<boolean>;
+
     /** Print a string to standard output. */
     echo: (strings: TemplateStringsArray, ...args: TemplateVar[]) => void;
+
     /**
      * Define a mock: instead of `pattern`, run `command`.
      * Patterns consist of one or more words and support globbing from the second word, e.g.
@@ -25,12 +31,17 @@ export interface ShellProperties {
      * mocks are defined.
      */
     mock(pattern: string, command?: string): void;
+
+    mockAllCommands(): void,
+
     /** Remove all mocks. */
     mockRestore(): void;
+
     /**
      * Disable or delay processing of SIGINT/TERM/QUIT signals. Also, process any pending signals.
      */
     handleSignals(options?: HandleSignalsOptions): void;
+
     /**
      * Re-enable processing of SIGINT/TERM/QUIT signals. Also, process any pending signals.
      */
@@ -46,15 +57,20 @@ type JSON = Object | string | number | boolean | null;
 
 export interface ShellOptions extends SpawnSyncOptions {
     encoding?: BufferEncoding;
+
     /** The delimiter used for `sh.array`. */
     fieldSeperator?: string;
+
     /** Run in debug mode, printing commands that are executed. */
     debug?: boolean;
+
     /**
      * Largest amount of data in bytes allowed on stdout or stderr. If exceeded, the child process is terminated.
      * Default: `10 * 1024 * 1024`.
      */
     maxBuffer?: number;
+
+    mockAllCommands?: boolean;
 }
 
 export type TemplateError = "<<< Please invoke using template literal syntax, e.g. sh `command`;";
