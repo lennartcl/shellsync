@@ -110,6 +110,7 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
                 mock: {called: 0}
             };
             validateSyntax(mock);
+            removeMock(pattern, false);
             mocks.push(mock);
             mocks.sort((a, b) => b.patternLength - a.patternLength);
             return mock.mock;
@@ -125,17 +126,17 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
             }
             if (!pattern.match(/^[A-Za-z0-9_$-]*\*?/))
                 throw new Error("Unsupported mockRestore pattern: " + pattern);
-            removeMock(pattern);
+            removeMock(pattern, true);
             if (options.mockAllCommands)
                 shell.mock(pattern, `${pattern.split(" ")[0]} "$@"`);
         },
         handleSignals,
         handleSignalsEnd,
     };
-    const removeMock = (pattern: string) => {
+    const removeMock = (pattern: string, matchWithGlob: boolean) => {
         let patternRegExp = new RegExp(pattern.replace(/\*/, ".*"));
         for (let i = mocks.length - 1; i >= 0; i--) {
-            if (mocks[i].pattern.match(patternRegExp))
+            if (matchWithGlob ? mocks[i].pattern.match(patternRegExp) : mocks[i].pattern === pattern)
                 mocks.splice(i, 1);
         }
     };

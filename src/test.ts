@@ -351,6 +351,14 @@ describe('#createShell', () => {
         assert.equal(mockHello.called, 3);
         assert.equal(mockBye.called, 1);
     });
+
+    it("allows replacing existing mocks", () => {
+        let mock1 = sh.mock("hello");
+        let mock2 = sh.mock("hello");
+        sh`hello`;
+        assert.equal(mock1.called, 0);
+        assert.equal(mock2.called, 1);
+    });
     
     it('supports ssh', () => {
         shh`echo silence is gold`;
