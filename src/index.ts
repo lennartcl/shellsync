@@ -92,7 +92,7 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
         echo: (strings, ...args) => {
             const value = strings.map((string, i) => {
                 if (i === strings.length - 1) return string;
-                return string + shellStringify(args[i]);
+                return string + args[i];
             }).join("");
             if (mocks.find(m => m.name === "echo"))
                 return sh`echo ${value}`;

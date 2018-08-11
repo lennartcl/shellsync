@@ -505,6 +505,15 @@ describe('#createShell', () => {
         };
         sh.echo`hello`;
     });
+
+    it("correctly quotes for echo``", (next) => {
+        console.log = (output: string) => {
+            console.log = consoleLog;
+            assert.equal(output, "it's all good")
+            next();
+        };
+        sh.echo`it's all good`;
+    });
 });
 
 describe("#mockAllCommands", () => {
