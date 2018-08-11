@@ -507,7 +507,7 @@ describe('#createShell', () => {
     });
 });
 
-describe("#mockEverything", () => {
+describe("#mockAllCommands", () => {
     afterEach(() => {
         sh.options.debug = false;
         sh.mockRestore();
@@ -521,6 +521,16 @@ describe("#mockEverything", () => {
         try {
             sh`ls`;
         } catch {
+            next();
+        }
+    });
+
+    it("throws for unmocked spawns", (next) => {
+        sh.mockAllCommands();
+        try {
+            sh`/bin/ls`;
+        } catch (e) {
+            assert.equal(e.message, "Unmocked external command. To mock this command, use 'command /bin/ls' and create a mock that matches 'command /bin/ls'.");
             next();
         }
     });
@@ -565,7 +575,7 @@ describe("#mockEverything", () => {
         try {
             sh`pwd; ls`;
         } catch (e) {
-            assert.equal(e.message, "Unmocked command: ls\n");
+            assert.equal(e.message, "Unmocked command: ls");
             next();
         }
     });

@@ -42,7 +42,7 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
         const {output, stdout, stderr, status, error} = child;
         
         if (output && output[metaStream].startsWith("\0\0"))
-            throw Object.assign(new Error(output[metaStream].substr(2)), {code: "EMOCK"});
+            throw Object.assign(new Error(output[metaStream].substr(2).trim()), {code: "EMOCK"});
         if (output && output[metaStream].startsWith("\0"))
             parseEmittedSignal(output[metaStream]);
         else if (output && output[metaStream])
@@ -99,8 +99,10 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
             console.log(value);
         },
         mock: (pattern, command) => {
-            if (pattern.match(/([\\"')(\n\r\$!`&<>\.\$;])/))
-                throw new Error("Illegal character in pattern: " + RegExp.$1);
+            if (pattern.match(/^[\./]/))
+                throw new Error("Unsupported mock pattern. To mock an external command like /bin/ls, call the command using 'command /bin/ls' and create a mock for 'command /bin/ls'");
+            if (pattern.match(/([\\"')(\n\r\$!`&<>\$;]|\.\*)/))
+                throw new Error("Unsupported character sequence in pattern: " + RegExp.$1);
             const mock = {
                 name: pattern.split(" ")[0],
                 pattern,
@@ -314,7 +316,12 @@ function mockAllCommands(options: ShellOptions, mocks: MockCommand[], startDebug
             ${mocks.map(m => `
                 ${m.patternEscaped}) ;;
             `).join("\n")}
-                 *) builtin printf "\\0\\0" >&${metaStream}
+                [\\./]*)  
+                    builtin printf "\\0\\0" >&${metaStream}
+                    builtin echo "Unmocked external command. To mock this command, use 'command $COMMAND' and create a mock that matches 'command $COMMAND'." >&${metaStream}
+                    builtin exit 1 ;;
+                *)
+                    builtin printf "\\0\\0" >&${metaStream}
                     builtin echo "Unmocked command: $COMMAND" >&${metaStream}
                     builtin exit 1
             esac
