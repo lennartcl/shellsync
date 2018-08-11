@@ -9,6 +9,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "shellsync": "^0.1.0"
+    "mocha": "^5.2.0",
+    "shellsync": "^0.1.0",
+    "ts-mocha": "^2.0.0",
+    "ts-node": "^7.0.0",
+    "typescript": "^3.0.1"
+  },
+  "scripts": {
+    "test": "ts-mocha test.ts",
+    "test-watch": "ts-mocha --watch --watch-extensions ts test.ts"
   }
 }

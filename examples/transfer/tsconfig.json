@@ -6,11 +6,6 @@
         "sourceMap": true,
         "moduleResolution": "node",
         "inlineSources": true,
-        "strictNullChecks": true,
-        "strictPropertyInitialization": true,
-        "noImplicitAny": true,
-        "noImplicitReturns": false,
-        "noImplicitThis": true,
         "paths": {
             "*": [
                 "node_modules/*"
