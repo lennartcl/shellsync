@@ -70,28 +70,67 @@ sh`ls; ${unquoted(command2)}`; // ls; sudo apt-get install foo
 
 Test your shellsync scripts using mocking and standard testing frameworks such as Mocha or Jest.
 
-Use `sh.mock(pattern, command)` to mock shell command using [glob patterns](https://mywiki.wooledge.org/glob). For example, use the pattern `git log` to mock any calls to `git log`, or use `git *` to mock all calls to `git` accross the board. If you have multiple mocks, the longest (most specific) matching pattern wins.
+Shell scripts often have many side effects, so it's a good habit to mock out commands
+that touch the file system, interact with processes, and so on.
 
-`sh.restoreMocks()` restores all mocked commands to the original shell command.
-
-Example Mocha test:
+Use `sh.mock(pattern, command)` to mock shell command using [glob patterns](https://mywiki.wooledge.org/glob).
+For example, use the pattern `git log` to mock any calls to `git log`, or use `git *` to mock all calls to
+`git` accross the board. If you have multiple mocks, the longest (most specific) matching pattern wins:
 
 ```javascript
-const sh = require("shellsync");
+// Script under test
+function script() {
+    return sh`git status`;
+}
 
+// Mocha tests
 it("mocks git status", () => {
-    sh.mock("git status", `echo git status called`);
-    assert.equal(sh`git status`, "git status called");
+    let mock = sh.mock("git status", `echo mock for git status`); // instead of 'git status', run 'echo ...'
+    assert.equal(script(), "mock for git status");
+    assert(mock.called);
 });
 
 it("mocks arbitrary git command", () => {
     let mock = sh.mock("git *", `echo git command called: $1`);
-    assert.equal(sh`git foo`, "git command called: foo");
+    assert.equal(script(), "git command called: status");
     assert(mock.called);
 });
+```
 
-// Restore all mocked commands
-afterEach(() => sh.mockRestore());
+It's a good habit to mock out all shell commands that have side effects.
+Use `sh.mockAllCommmands()` to ensure a mock exists _all_ shell commands.
+You can then selectively add mocks or use `sh.unmock(pattern)` to unmock command:
+
+```javascript
+// Script under test
+function script() {
+    return sh`git status`;
+}
+
+// Before each Mocha test, mock the world 
+beforeEach(() => sh.mockAllCommands());
+
+// Mocha tests
+it("mocks git status", () => {
+    program(); // fails: no mock was defined for "git status"
+});
+
+it("mocks git status", () => {
+    sh.mock("git status");
+    program(); // passes, returns ""
+});
+
+it("mocks git status", () => {
+    sh.unmock("git *");
+    program(); // passes, returns response of git status
+});
+```
+
+Finally, `sh.unmockAllCommands()` restores all mocked commands to the original shell command.
+
+```javascript
+// After each Mocha test, restore all mocked commands
+afterEach(() => sh.unmockAllCommands());
 ```
 
 ### Uninterruptable sections
@@ -160,14 +199,18 @@ Patterns consist of one or more words and support globbing from the second word,
 `git`, `git status`, `git s*`. The longest (most specific) pattern is used in case multiple
 mocks are defined.
 
-### sh.mockRestore(pattern?): void
-
-Remove all mocks. When `pattern` is specified, remove a single mock.
-
 ### sh.mockAllCommands(): void
 
 Force mocks for all shell commands, throwing an error when an unmocked command is used.
 Does not handle commands in subshells or shell functions.
+
+### sh.unmock(pattern: string): void
+
+Remove a specific mock by pattern. Best used with `mockAllCommands()`.
+
+### sh.unmockAllCommands(): void
+
+Remove all mocks. When `pattern` is specified, remove a single mock.
 
 ### sh.quote\`command\`: string
 

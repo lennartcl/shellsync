@@ -123,14 +123,13 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
         mockAllCommands: () => {
             options.mockAllCommands = true;
         },
-        mockRestore: (pattern?) => {
-            if (!pattern) {
-                options.mockAllCommands = false;
-                mocks.splice(0, mocks.length);
-                return;
-            }
+        unmockAllCommands: () => {
+            options.mockAllCommands = false;
+            mocks.splice(0, mocks.length);
+        },
+        unmock: (pattern) => {
             if (!pattern.match(/^[A-Za-z0-9_$-]*\*?/))
-                throw new Error("Unsupported mockRestore pattern: " + pattern);
+                throw new Error("Unsupported unmock pattern: " + pattern);
             removeMock(pattern, true);
             if (options.mockAllCommands)
                 shell.mock(pattern, `${pattern.split(" ")[0]} "$@"`);
@@ -331,14 +330,21 @@ function mockAllCommands(options: ShellOptions, mocks: MockCommand[], startDebug
             `).join("\n")}
                 [\\./]*)  
                     builtin printf "\\0\\0" >&${metaStream}
-                    builtin echo "Unmocked external command. To mock this command, use 'command $COMMAND' and create a mock that matches 'command $COMMAND'." >&${metaStream}
+                    builtin echo "No mock for external command. To mock this command, use 'command $COMMAND' and create a mock that matches 'command $COMMAND'." >&${metaStream}
+                    if [[ \${COMMAND%% *} != $COMMAND ]]; then
+                        builtin echo "You can also use sh.unmock('\${COMMAND%% *} *') to remove the mock for this command." >&${metaStream}
+                    else
+                        builtin echo "You can also use sh.unmock('$COMMAND') to remove the mock for this command." >&${metaStream} 
+                    fi
                     builtin exit 1 ;;
                 *)
                     builtin printf "\\0\\0" >&${metaStream}
                     if [[ \${COMMAND%% *} != $COMMAND ]]; then
-                        builtin echo "Unmocked command. To mock this command, add a mock for '$COMMAND' or a pattern like '\${COMMAND%% *} *'." >&${metaStream}
+                        builtin echo "No mock for command. To mock this command, add a mock for '$COMMAND' or a pattern like '\${COMMAND%% *} *'." >&${metaStream}
+                        builtin echo "You can also use sh.unmock('\${COMMAND%% *} *') to remove the mock for this command." >&${metaStream} 
                     else
-                        builtin echo "Unmocked command: $COMMAND" >&${metaStream}
+                        builtin echo "No mock for command. To mock this command, add a mock for '$COMMAND'." >&${metaStream}
+                        builtin echo "You can also use sh.unmock('$COMMAND') to remove the mock for this command." >&${metaStream} 
                     fi
                     builtin exit 1
             esac

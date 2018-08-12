@@ -112,7 +112,7 @@ describe('#createShell', () => {
     afterEach(() => {
         console.log = consoleLog;
         console.error = consoleError;
-        sh.mockRestore();
+        sh.unmockAllCommands();
         sh.handleSignalsEnd();
     });
     
@@ -253,7 +253,7 @@ describe('#createShell', () => {
         sh.mock("echo hello", "echo mock-1");
         sh.mock("echo *", "echo mock-2");
         assert.equal(sh`echo hello`, "mock-1");
-        sh.mockRestore("echo *");
+        sh.unmock("echo *");
         assert.equal(sh`echo hello`, "hello");
         assert.equal(sh`echo bye`, "bye");
     });
@@ -261,13 +261,13 @@ describe('#createShell', () => {
     it("supports mockRestore(mock) with shared state between sh and shh", () => {
         sh.mock("echo *", "echo mock-1");
         assert.equal(shh`echo hello`, "mock-1");
-        sh.mockRestore("echo *");
+        sh.unmock("echo *");
         assert.equal(shh`echo hello`, "hello");
     });
 
     it("supports mockRestore(mock) with mockAllCommand()", () => {
         sh.mockAllCommands();
-        sh.mockRestore("echo *");
+        sh.unmock("echo *");
         assert.equal(sh`echo hello`, "hello");
     });
     
@@ -519,7 +519,7 @@ describe('#createShell', () => {
 describe("#mockAllCommands", () => {
     afterEach(() => {
         sh.options.debug = false;
-        sh.mockRestore();
+        sh.unmockAllCommands();
         sh.options.stdio = stdioDefault;
         console.log = consoleLog;
         console.error = consoleError;
@@ -539,7 +539,7 @@ describe("#mockAllCommands", () => {
         try {
             sh`/bin/ls`;
         } catch (e) {
-            assert.equal(e.message, "Unmocked external command. To mock this command, use 'command /bin/ls' and create a mock that matches 'command /bin/ls'.");
+            assert.equal(e.message, "No mock for external command. To mock this command, use 'command /bin/ls' and create a mock that matches 'command /bin/ls'.\nYou can also use sh.unmock('/bin/ls') to remove the mock for this command.");
             next();
         }
     });
@@ -549,7 +549,7 @@ describe("#mockAllCommands", () => {
         try {
             sh`echo foo`;
         } catch (e) {
-            assert.equal(e.message, "Unmocked command. To mock this command, add a mock for 'echo foo' or a pattern like 'echo *'.");
+            assert.equal(e.message, "No mock for command. To mock this command, add a mock for 'echo foo' or a pattern like 'echo *'.\nYou can also use sh.unmock('echo *') to remove the mock for this command.");
             next();
         }
     });
@@ -594,7 +594,7 @@ describe("#mockAllCommands", () => {
         try {
             sh`pwd; ls`;
         } catch (e) {
-            assert.equal(e.message, "Unmocked command: ls");
+            assert.equal(e.message, "No mock for command. To mock this command, add a mock for 'ls'.\nYou can also use sh.unmock('ls') to remove the mock for this command.");
             next();
         }
     });

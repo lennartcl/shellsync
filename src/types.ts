@@ -32,10 +32,17 @@ export interface ShellProperties {
      */
     mock(pattern: string, command?: string): Mock;
 
+    /**
+     * Force mocks for all shell commands, throwing an error when an unmocked command is used.
+     * Does not handle commands in subshells or shell functions.
+     */
     mockAllCommands(): void,
 
     /** Remove all mocks. */
-    mockRestore(pattern?: string): void;
+    unmockAllCommands(): void;
+
+    /** Remove a specific mock by pattern. Best used with {@link #mockAllCommands}. */
+    unmock(pattern: string): void;
 
     /**
      * Disable or delay processing of SIGINT/TERM/QUIT signals. Also, process any pending signals.
