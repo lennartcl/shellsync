@@ -381,30 +381,33 @@ describe('#createShell', () => {
             sh`echo let's get errors`;
         } catch (e) {
             assert.equal(e.code, 2);
-            assert(e.message.match(/Error: Process exited with error code 2/), e.message);
-            assert(!e.message.match(/unexpected EOF/), e.message);
+            assert(e.message, "AssertionError [ERR_ASSERTION]: Syntax error in command: `echo let's get errors`"
+                + "/bin/bash: line 1: unexpected EOF while looking for matching `''"
+                + "/bin/bash: line 2: syntax error: unexpected end of file");
             next()
         }
     });
     
-    it('reports syntax errors with more details for shh', (next) => {
+    it('reports syntax errors for shh', (next) => {
         try {
             shh`echo let's get errors`;
         } catch (e) {
             assert.equal(e.code, 2);
-            assert(e.message.match(/Error: Process exited with error code 2/), e.message);
-            assert(e.message.match(/unexpected EOF/), e.message);
+            assert(e.message, "AssertionError [ERR_ASSERTION]: Syntax error in command: `echo let's get errors`"
+                + "/bin/bash: line 1: unexpected EOF while looking for matching `''"
+                + "/bin/bash: line 2: syntax error: unexpected end of file");
             next()
         }
     });
     
     it('reports syntax errors for shh.json', (next) => {
         try {
-            shh.json`echo let's get json`;
+            shh.json`echo let's get errors`;
         } catch (e) {
             assert.equal(e.code, 2);
-            assert(e.message.match(/Error: Process exited with error code 2/), e.message);
-            assert(e.message.match(/unexpected EOF/), e.message);
+            assert(e.message, "AssertionError [ERR_ASSERTION]: Syntax error in command: `echo let's get errors`"
+                + "/bin/bash: line 1: unexpected EOF while looking for matching `''"
+                + "/bin/bash: line 2: syntax error: unexpected end of file");
             next()
         }
     });

@@ -4,10 +4,11 @@
  *----------------------------------------------------------------------------------------------*/
 import * as child_process from "child_process";
 import {SpawnSyncReturns, SpawnSyncOptionsWithStringEncoding} from "child_process";
-import {Shell, ShellFunction, MockCommand, Mock, ShellOptions, TemplateError, ShellProperties, CreateShellFunction, TemplateVar} from "./types";
+import {Shell, ShellFunction, MockCommand, ShellOptions, TemplateError, ShellProperties, CreateShellFunction, TemplateVar} from "./types";
 import {existsSync} from "fs";
 import {handleSignals, handleSignalsEnd, parseEmittedSignal, wrapDisableInterrupts, isHandleSignalsActive} from "./handle_signals";
 const shellEscape = require("any-shell-escape");
+const bashBuiltinError = 2;
 const metaStream = 3;
 const mockStream = 4;
 const stdioDefault = [0, "pipe", "inherit", "pipe", "pipe"];
@@ -20,16 +21,15 @@ enum ParseState {
     SingleQuoted = "SingleQuoted",
 };
 
-function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): Shell {
+function createShell(options: ShellOptions, mocks: MockCommand[] = []): Shell {
     options.encoding = options.encoding || "utf8";
     options.maxBuffer = options.maxBuffer || 10 * 1024 * 1024;
     options.stdio = options.stdio || stdioDefault;
+    options.shell = options.shell || "/bin/bash";
 
     let child: SpawnSyncReturns<string>;
 
     const exec = (overrideOptions: ShellOptions, commands: TemplateStringsArray | TemplateError, ...commandVars: TemplateVar[]) => {
-        const shellProcess = typeof options.shell === "string" ? options.shell : "/bin/bash";
-        
         let basicCommand = quote(commands, ...commandVars);
         let command = wrapShellCommand(basicCommand, options, mocks);
         if (isHandleSignalsActive()) command = wrapDisableInterrupts(command);
@@ -41,12 +41,12 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
         if (childOptions.input != null)
             childOptions.stdio = ["pipe", ...childOptions.stdio.slice(1)];
 
-        child = child_process.spawnSync(shellProcess, ["-c", command], childOptions);
+        child = child_process.spawnSync(options.shell!, ["-c", command], childOptions);
         const {output, stdout, stderr, status, error} = child;
         
         if (output && output[metaStream].startsWith("\0\0"))
             throw Object.assign(new Error(output[metaStream].substr(2).trim()), {code: "EMOCK"});
-        if (output && output[metaStream].startsWith("\0"))
+        else if (output && output[metaStream].startsWith("\0"))
             parseEmittedSignal(output[metaStream]);
         else if (output && output[metaStream])
             shell.options.cwd = output[metaStream];
@@ -57,6 +57,7 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
             output[mockStream].split("\0").forEach(reportMockCalled);
 
         if (status) {
+            if (status === bashBuiltinError) validateCommandSyntax(basicCommand);
             throw Object.assign(
                 new Error((stderr ? stderr + "\n" : "")
                     + "Error: Process exited with error code " + status),
@@ -106,6 +107,8 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
                 throw new Error("Unsupported mock pattern. To mock an external command like /bin/ls, call the command using 'command /bin/ls' and create a mock for 'command /bin/ls'");
             if (pattern.match(/([\\"')(\n\r\$!`&<>\$;]|\.\*)/))
                 throw new Error("Unsupported character sequence in pattern: " + RegExp.$1);
+            if (pattern.match(/^\w*\*\w*/))
+                throw new Error("Pattern matching in first word is not supported: " + command);
             const mock = {
                 name: pattern.split(" ")[0],
                 pattern,
@@ -114,7 +117,7 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
                 command: command || "",
                 mock: {called: 0}
             };
-            validateSyntax(mock);
+            validateMockSyntax(mock);
             removeMock(pattern, false);
             mocks.push(mock);
             mocks.sort((a, b) => b.patternLength - a.patternLength);
@@ -149,14 +152,15 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
             if (mock.pattern === pattern) mock.mock.called++
         }
     };
-    const validateSyntax = (mock: MockCommand): void => {
-        try {
-            shellHushed`${mock.name}() {\n${unquoted(mock.command)}\n:\n}`;
-        }
-        catch (e) {
-            e.message = `Error in mock: ${mock.command}\n${e.stderr}`;
-            throw e;
-        }
+    const validateCommandSyntax = (command: string): void => {
+        let parse = child_process.spawnSync(options.shell!, ["-n"], {input: command});
+        if (!parse.status) return;
+        
+        const error = `Syntax error in command: \`${command}\`\n${parse.stderr}`;
+        throw Object.assign(new Error(error), {code: parse.status, stderr: parse.stderr});
+    };
+    const validateMockSyntax = (mock: MockCommand): void => {
+        validateCommandSyntax(`${mock.name}() {\n${unquoted(mock.command)}\n:\n}`);
     };
     const execOrCreateShell: ShellFunction<string> & CreateShellFunction =
         (arg: any = {}, ...commandVars: any[]): any => {

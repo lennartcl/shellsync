@@ -77,6 +77,9 @@ export interface ShellOptions extends SpawnSyncOptions {
      */
     maxBuffer?: number;
 
+    /** The shell used. Default `/bin/bash`. */
+    shell?: string;
+
     mockAllCommands?: boolean;
 }
 
