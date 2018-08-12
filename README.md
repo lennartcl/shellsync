@@ -133,6 +133,22 @@ Finally, `sh.unmockAllCommands()` restores all mocked commands to the original s
 afterEach(() => sh.unmockAllCommands());
 ```
 
+### Debugging
+
+Use `sh.options.debug` to trace all commands executed by your scripts or your mocks:
+
+```javascript
+sh.mock("ls *", "echo ls was mocked");
+sh`cd /`;
+sh`ls -l`;
+// Prints:
+// + cd /
+// + ls -l
+// + : mock for ls :
+// + echo ls was mocked
+// ls was mocked
+```
+
 ### Uninterruptable sections
 
 > _"Please do not interrupt me while I'm ignoring you"_ – unknown author
