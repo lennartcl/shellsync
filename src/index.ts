@@ -14,10 +14,10 @@ const stdioDefault = [0, "pipe", "inherit", "pipe", "pipe"];
 const stdioHushed = [0, "pipe", "pipe", "pipe", "pipe"];
 const stdioOut = [0, "inherit", "inherit", "pipe", "pipe"];
 enum ParseState {
-    BackTick,
-    Expression,
-    DoubleQuoted,
-    SingleQuoted,
+    BackTick =  "BackTick",
+    Expression = "Expression",
+    DoubleQuoted = "DoubleQuoted",
+    SingleQuoted = "SingleQuoted",
 };
 
 function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): Shell {
@@ -30,9 +30,12 @@ function createShell(options: ShellOptions = {}, mocks: MockCommand[] = []): She
     const exec = (overrideOptions: ShellOptions, commands: TemplateStringsArray | TemplateError, ...commandVars: TemplateVar[]) => {
         const shellProcess = typeof options.shell === "string" ? options.shell : "/bin/bash";
         
-        let command = quote(commands, ...commandVars);
-        command = wrapShellCommand(command, options, mocks);
+        let basicCommand = quote(commands, ...commandVars);
+        let command = wrapShellCommand(basicCommand, options, mocks);
         if (isHandleSignalsActive()) command = wrapDisableInterrupts(command);
+
+        if (options.mockAllCommands && parseFragment([], basicCommand).hasSubshell)
+            throw new Error("Command appears to have a subshell; mockAllCommands() does not support subshells: " + basicCommand);
         
         const childOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
         if (childOptions.input != null)
@@ -186,6 +189,8 @@ const quote: ShellFunction<string> = (commands, ...commandVars) => {
  * `echo ${var}` but not for `echo "${var}"`.
  */
 function parseFragment(states: ParseState[], fragment: string) {
+    let hasSubshell = fragment[0] === "(";
+    let maybeAtLineStart = true;
     const {BackTick, SingleQuoted, DoubleQuoted, Expression} = ParseState;
     const process = (state: ParseState) => {
         if (last() === state) return states.pop();
@@ -194,10 +199,13 @@ function parseFragment(states: ParseState[], fragment: string) {
     };
     const last = () => states[states.length - 1];
     for (var i = 0; i < fragment.length; i++) {
-        switch (fragment[i]) {
+        let char = fragment[i];
+        switch (char) {
             case '\\':
                 i++; break;
             case '`':
+                if (last() == SingleQuoted) break;
+                hasSubshell = true;
                 process(BackTick); break;
             case '"':
                 process(DoubleQuoted); break;
@@ -207,7 +215,9 @@ function parseFragment(states: ParseState[], fragment: string) {
             case '$':
                 if (fragment[i+1] !== '(') break;
                 if (last() == SingleQuoted) break;
-                states.push(Expression); break;
+                states.push(Expression);
+                hasSubshell = true;
+                break;
             case ')':
                 if (last() !== Expression) break;
                 process(Expression); break;
@@ -215,7 +225,10 @@ function parseFragment(states: ParseState[], fragment: string) {
     }
     return {
         states,
+        /** Whether the next template variable should be quoted. */
         shouldQuote: [SingleQuoted, DoubleQuoted].indexOf(last()) === -1,
+        /** Whether a subshell was used. Underapproximated. */
+        hasSubshell,
     };
 }
 
@@ -322,7 +335,11 @@ function mockAllCommands(options: ShellOptions, mocks: MockCommand[], startDebug
                     builtin exit 1 ;;
                 *)
                     builtin printf "\\0\\0" >&${metaStream}
-                    builtin echo "Unmocked command: $COMMAND" >&${metaStream}
+                    if [[ \${COMMAND%% *} != $COMMAND ]]; then
+                        builtin echo "Unmocked command. To mock this command, add a mock for '$COMMAND' or a pattern like '\${COMMAND%% *} *'." >&${metaStream}
+                    else
+                        builtin echo "Unmocked command: $COMMAND" >&${metaStream}
+                    fi
                     builtin exit 1
             esac
         }

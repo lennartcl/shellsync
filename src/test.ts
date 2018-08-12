@@ -544,6 +544,16 @@ describe("#mockAllCommands", () => {
         }
     });
 
+    it("throws for with advice for patterns on unmocked commands", (next) => {
+        sh.mockAllCommands();
+        try {
+            sh`echo foo`;
+        } catch (e) {
+            assert.equal(e.message, "Unmocked command. To mock this command, add a mock for 'echo foo' or a pattern like 'echo *'.");
+            next();
+        }
+    });
+
     it("throws for unmocked with sh.test", (next) => {
         sh.mockAllCommands();
         try {
@@ -587,5 +597,56 @@ describe("#mockAllCommands", () => {
             assert.equal(e.message, "Unmocked command: ls");
             next();
         }
+    });
+
+    it("throws when it detects use of subshells", (next) => {
+        sh.mockAllCommands();
+        try {
+            sh.out`( pwd; ls; )`;
+        } catch (e) {
+            assert.equal(e.message, "Command appears to have a subshell; mockAllCommands() does not support subshells: ( pwd; ls; )");
+            next();
+        }
+    });
+
+    it("throws when unmocked commands are used to the left of a pipe", (next) => {
+        sh.mockAllCommands();
+        sh.mock("mocked");
+        try {
+            sh.out`unmocked | mocked`;
+        } catch {
+            next();
+        }
+    });
+
+    it("throws when unmocked commands are used to the right of a pipe", (next) => {
+        sh.mockAllCommands();
+        sh.mock("mocked");
+        try {
+            sh.out`mocked | unmocked`;
+        } catch {
+            next();
+        }
+    });
+
+    it("throws when it detects use of subshell expressions", (next) => {
+        sh.mockAllCommands();
+        sh.mock("echo *");
+        try {
+            sh.out`echo $(hello)`;
+        } catch (e) {
+            assert.equal(e.message, "Command appears to have a subshell; mockAllCommands() does not support subshells: echo $(hello)");
+            next();
+        }
+    });
+
+    it("doesn't throw when there are no subshells", () => {
+        sh.mockAllCommands();
+        sh.mock("echo *");
+        sh`echo '$(echo)'`; // in 'quotes'
+        sh`echo "\\$(echo)"`; // after \escape
+        let quoted = "`quoted`";
+        sh`echo '${quoted}'`; // in 'quotes'
+        sh`echo ${quoted}`; // in automatic quotes
     });
 })
