@@ -11,7 +11,6 @@ import * as fs from "fs";
 let configuredDownloadClient = "";
 let configuredUploadClient = "";
 let currentVersion="1.22.0";
-let response;
 
 /** This function determines which http get tool the system has installed and returns an error if there isnt one. */
 export function getConfiguredDownloadClient() {
@@ -63,11 +62,11 @@ export function checkInternet() {
 }
 
 export function singleDownload(targetPath, path, file) {
-    if (!fs.statSync(`${targetPath}`).isDirectory) {
+    if (!fs.existsSync(`${targetPath}`)) {
         echo`Directory doesn't exist, creating it now...`;
         sh`mkdir -p ${targetPath}`;
     }
-    if (fs.statSync(`${targetPath}/${file}`).isFile) {
+    if (fs.existsSync(`${targetPath}/${file}`)) {
         echo`File aleady exists at ${targetPath}/${file}, do you want to delete it? [Y/n] `;
         const answer = sh`read -r; echo $REPLY`;
         if (!answer.match(/^[Yy]$/))
@@ -76,39 +75,43 @@ export function singleDownload(targetPath, path, file) {
     }
     echo`Downloading ${file}`;
     httpDownload(targetPath, path, file);
-    console.log("Success!");
-}
-
-export function httpSingleUpload(sourcePath, filename) {
-    switch (configuredUploadClient) {
-        case "curl": response = sh`curl -A curl --progress --upload-file ${sourcePath} "https://transfer.sh/${filename}`;
-        case "wget": response = sh`wget --progress=dot --method PUT --body-file=${sourcePath} "https://transfer.sh/${filename}`;
-    }
     echo`Success!`;
 }
 
-export function printUploadResponse(filename) {
-    const fileID = sh`(echo ${response} | cut -d "/" -f 4)`;
+export function httpSingleUpload(sourcePath, filename) {
+    let response;
+    switch (configuredUploadClient) {
+        case "curl": response = sh`curl -A curl --progress --upload-file ${sourcePath} "https://transfer.sh/${filename}`;
+        case "wget": response = sh`wget --progress=dot --method PUT --body-file=${sourcePath} "https://transfer.sh/${filename}`;
+        default: throw new Error("No upload client defined");
+    }
+    echo`Success!`;
+    return response;
+}
+
+export function printUploadResponse(filename, response) {
+    const fileID = sh`echo ${response} | cut -d "/" -f 4`;
     echo`Transfer Download Command: transfer -d <desiredOutputDirectory> ${fileID} ${filename}`;
     echo`Transfer File URL: ${response}`;
 }
 
-export function printOntimeUpload(downlink) {
+export function printOnetimeUpload(downlink) {
     echo`Download link: ${downlink}`;
 }
 
 export function singleUpload(sourcePath) {
     sourcePath = sourcePath.replace(/~/, process.env.HOME);
-    if (!fs.statSync(sourcePath).isFile) throw new Error("Invalid file path");
+    if (!fs.existsSync(sourcePath)) throw new Error("Invalid file path");
     let filename = sourcePath.replace(/.*\\/, "");
     echo`Uploading ${filename}`;
-    httpSingleUpload(sourcePath, filename);
-    return filename;
+    let response = httpSingleUpload(sourcePath, filename);
+    return {filename, response};
 }
 
 export function onetimeUpload(sourcePath) {
-    response = sh`curl -A curl -s -F "file=@${sourcePath}" http://ki.tc/file/u/`;
-    return sh`echo ${response} | python -c "import sys, json; print json.load(sys.stdin)['file']['download_page']`;
+    let response = sh`curl -A curl -s -F "file=@${sourcePath}" http://ki.tc/file/u/`;
+    let downlink = sh`echo ${response} | python -c "import sys, json; print json.load(sys.stdin)['file']['download_page']`;
+    return {response, downlink};
 }
 
 export function usage() {
@@ -143,12 +146,12 @@ export function main(args) {
             getConfiguredDownloadClient();
             if (configuredDownloadClient !== "curl")
                 throw new Error("curl must be installed to use one time file upload");
-            let downlink = onetimeUpload(process.argv[2]);
-            printOntimeUpload(downlink);
+            let {downlink} = onetimeUpload(process.argv[2]);
+            printOnetimeUpload(downlink);
             break;
         case "-d":
             if (process.argv.length < 5) { echo`Error: not enough arguments for downloading a file, see the usage`; process.exit(1); }
-            if (process.argv.length > 5) { echo`Error: too many enough arguments for downloading a file, see the usage`; process.exit(1); }
+            if (process.argv.length > 5) { echo`Error: too many arguments for downloading a file, see the usage`; process.exit(1); }
             singleDownload(process.argv[2], process.argv[3], process.argv[4]);
             break;
         default:
@@ -162,8 +165,8 @@ export function main(args) {
                 getConfiguredDownloadClient();
                 checkInternet();
                 getConfiguredUploadClient();
-                let filename = singleUpload(file);
-                printUploadResponse(filename);
+                let {filename, response} = singleUpload(file);
+                printUploadResponse(filename, response);
                 continue;
             }
     }
