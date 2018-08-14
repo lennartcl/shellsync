@@ -6,7 +6,8 @@ import * as child_process from "child_process";
 import {SpawnSyncReturns, SpawnSyncOptionsWithStringEncoding} from "child_process";
 import {Shell, ShellFunction, MockCommand, ShellOptions, TemplateError, ShellProperties, CreateShellFunction, TemplateVar} from "./types";
 import {existsSync} from "fs";
-import {handleSignals, handleSignalsEnd, parseEmittedSignal, wrapDisableInterrupts, isHandleSignalsActive} from "./handle_signals";
+import {handleSignals, handleSignalsEnd, parseEmittedSignal, wrapDisableInterrupts, isHandleSignalsActive} from "./signals";
+import {MockManager} from "./mocking";
 const shellEscape = require("any-shell-escape");
 const bashBuiltinError = 2;
 const metaStream = 3;
@@ -21,27 +22,25 @@ enum ParseState {
     SingleQuoted = "SingleQuoted",
 };
 
-function createShell(options: ShellOptions, mocks: MockCommand[] = []): Shell {
+function createShell(options: ShellOptions, mocks = new MockManager()): Shell {
     options.encoding = options.encoding || "utf8";
     options.maxBuffer = options.maxBuffer || 10 * 1024 * 1024;
     options.stdio = options.stdio || stdioDefault;
     options.shell = options.shell || "/bin/bash";
-
-    let child: SpawnSyncReturns<string>;
 
     const exec = (overrideOptions: ShellOptions, commands: TemplateStringsArray | TemplateError, ...commandVars: TemplateVar[]) => {
         let basicCommand = quote(commands, ...commandVars);
         let command = wrapShellCommand(basicCommand, options, mocks);
         if (isHandleSignalsActive()) command = wrapDisableInterrupts(command);
 
-        if (options.mockAllCommands && parseFragment([], basicCommand).hasSubshell)
+        if (mocks.mockAllCommandsEnabled && parseFragment([], basicCommand).hasSubshell)
             throw new Error("Command appears to have a subshell; mockAllCommands() does not support subshells: " + basicCommand);
         
         const childOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
         if (childOptions.input != null)
             childOptions.stdio = ["pipe", ...childOptions.stdio.slice(1)];
 
-        child = child_process.spawnSync(options.shell!, ["-c", command], childOptions);
+        const child = child_process.spawnSync(options.shell!, ["-c", command], childOptions);
         const {output, stdout, stderr, status, error} = child;
         
         if (output && output[metaStream].startsWith("\0\0"))
@@ -54,7 +53,7 @@ function createShell(options: ShellOptions, mocks: MockCommand[] = []): Shell {
             console.error(cleanShellOutput(stderr));
 
         if (output && output[mockStream])
-            output[mockStream].split("\0").forEach(reportMockCalled);
+            mocks.processMockStream(output[mockStream]);
 
         if (status) {
             if (status === bashBuiltinError) validateCommandSyntax(basicCommand);
@@ -98,59 +97,25 @@ function createShell(options: ShellOptions, mocks: MockCommand[] = []): Shell {
                 if (i === strings.length - 1) return string;
                 return string + args[i];
             }).join("");
-            if (mocks.find(m => m.name === "echo"))
+            if (mocks.isMocked("echo"))
                 return sh`echo ${value}`;
             console.log(value);
         },
         mock: (pattern, command) => {
-            if (pattern.match(/^[\./]/))
-                throw new Error("Unsupported mock pattern. To mock an external command like /bin/ls, call the command using 'command /bin/ls' and create a mock for 'command /bin/ls'");
-            if (pattern.match(/([\\"')(\n\r\$!`&<>\$;]|\.\*)/))
-                throw new Error("Unsupported character sequence in pattern: " + RegExp.$1);
-            if (pattern.match(/^\w*\*\w*/))
-                throw new Error("Pattern matching in first word is not supported: " + command);
-            const mock = {
-                name: pattern.split(" ")[0],
-                pattern,
-                patternEscaped: pattern.replace(/\s/g, "\\ "),
-                patternLength: pattern.replace(/\*$/, "").length,
-                command: command || "",
-                mock: {called: 0}
-            };
-            validateMockSyntax(mock);
-            removeMock(pattern, false);
-            mocks.push(mock);
-            mocks.sort((a, b) => b.patternLength - a.patternLength);
-            return mock.mock;
+            return mocks.mock(pattern, command, validateCommandSyntax, options);
         },
         mockAllCommands: () => {
-            options.mockAllCommands = true;
+            mocks.mockAllCommandsEnabled = true;
         },
         unmockAllCommands: () => {
-            options.mockAllCommands = false;
-            mocks.splice(0, mocks.length);
+            mocks.mockAllCommandsEnabled = false;
+            mocks.clear();
         },
         unmock: (pattern) => {
-            if (!pattern.match(/^[A-Za-z0-9_$-]*\*?/))
-                throw new Error("Unsupported unmock pattern: " + pattern);
-            removeMock(pattern, true);
-            if (options.mockAllCommands)
-                shell.mock(pattern, `${pattern.split(" ")[0]} "$@"`);
+            mocks.unmock(pattern, validateCommandSyntax, options);
         },
         handleSignals,
         handleSignalsEnd,
-    };
-    const removeMock = (pattern: string, matchWithGlob: boolean) => {
-        let patternRegExp = new RegExp(pattern.replace(/\*/, ".*"));
-        for (let i = mocks.length - 1; i >= 0; i--) {
-            if (matchWithGlob ? mocks[i].pattern.match(patternRegExp) : mocks[i].pattern === pattern)
-                mocks.splice(i, 1);
-        }
-    };
-    const reportMockCalled = (pattern: string) => {
-        for (let mock of mocks) {
-            if (mock.pattern === pattern) mock.mock.called++
-        }
     };
     const validateCommandSyntax = (command: string): void => {
         let parse = child_process.spawnSync(options.shell!, ["-n"], {input: command});
@@ -158,9 +123,6 @@ function createShell(options: ShellOptions, mocks: MockCommand[] = []): Shell {
         
         const error = `Syntax error in command: \`${command}\`\n${parse.stderr}`;
         throw Object.assign(new Error(error), {code: parse.status, stderr: parse.stderr});
-    };
-    const validateMockSyntax = (mock: MockCommand): void => {
-        validateCommandSyntax(`${mock.name}() {\n${unquoted(mock.command)}\n:\n}`);
     };
     const execOrCreateShell: ShellFunction<string> & CreateShellFunction =
         (arg: any = {}, ...commandVars: any[]): any => {
@@ -267,43 +229,16 @@ class UnquotedPart {
     }
 }
 
-function wrapShellCommand(command: string, options: ShellOptions, mocks: MockCommand[]) {
+function wrapShellCommand(command: string, options: ShellOptions, mocks: MockManager) {
     const startDebugTrace = options.debug ? `{ builtin set -x; } 2>/dev/null` : `:`;
     const stopDebugTrace = options.debug ? `{ builtin set +x; } 2>/dev/null` : `:`;
-    const {startMockAllCommands, stopMockAllCommands, setupMockAllCommands} =
-        mockAllCommands(options, mocks, startDebugTrace, stopDebugTrace);
+    const {defineMocks, endMocks} = mocks.createMockFunctions(options, startDebugTrace, stopDebugTrace);
     return `:
-        # Mock definitions
-        __execMock() {
-            case "$@" in
-            ${mocks.map(m => `
-                ${m.patternEscaped})
-                    builtin shift;
-                    ( ${m.name}() { builtin command ${m.name} "$@"; }
-                      builtin printf '\\0${m.pattern}\\0' >&${mockStream}
-                      ${startDebugTrace}
-                      : mock for ${m.name} :
-                      ${m.command}
-                    )
-                    ;;
-            `).join("\n")}
-            *) builtin command "$@" ;;
-            esac
-        }
-        export -f __execMock
-
-        # Functions to intercept mocked commands
-        ${mocks.map(m => `
-            ${m.name}() { ${stopDebugTrace}; __execMock ${m.name} "$@"; }
-            builtin export -f ${m.name}
-        `).join("\n")}
-
-        ${setupMockAllCommands}
-        ${startMockAllCommands}
+        ${defineMocks}
         ${startDebugTrace}
         ${command}
         { RET=$?; } 2>/dev/null
-        ${stopMockAllCommands}
+        ${endMocks}
         ${stopDebugTrace}
 
         # Capture current directory
@@ -312,52 +247,7 @@ function wrapShellCommand(command: string, options: ShellOptions, mocks: MockCom
     `;
 }
 
-function mockAllCommands(options: ShellOptions, mocks: MockCommand[], startDebugTrace: string, stopDebugTrace: string) {
-    if (!options.mockAllCommands)
-        return {stopMockAllCommands: "", startMockAllCommands: "", setupMockAllCommands: ""};
-    
-    const stopMockAllCommands = `
-        { builtin trap - DEBUG; } 2>/dev/null
-    `;
-    const startMockAllCommands = `
-        builtin trap "${stopDebugTrace}; __failOnUnmocked; ${startDebugTrace}" DEBUG
-    `;
-    const setupMockAllCommands = `
-        __failOnUnmocked() {
-            local COMMAND=\${BASH_COMMAND-$3}
-            if [[ $COMMAND =~ ^(builtin|return|exit|[{]|RET=\\$?|:$) ]]; then
-                return
-            fi
-            case "$COMMAND" in
-            ${mocks.map(m => `
-                ${m.patternEscaped}) ;;
-            `).join("\n")}
-                [\\./]*)  
-                    builtin printf "\\0\\0" >&${metaStream}
-                    builtin echo "No mock for external command. To mock this command, use 'command $COMMAND' and create a mock that matches 'command $COMMAND'." >&${metaStream}
-                    if [[ \${COMMAND%% *} != $COMMAND ]]; then
-                        builtin echo "You can also use sh.unmock('\${COMMAND%% *} *') to remove the mock for this command." >&${metaStream}
-                    else
-                        builtin echo "You can also use sh.unmock('$COMMAND') to remove the mock for this command." >&${metaStream} 
-                    fi
-                    builtin exit 1 ;;
-                *)
-                    builtin printf "\\0\\0" >&${metaStream}
-                    if [[ \${COMMAND%% *} != $COMMAND ]]; then
-                        builtin echo "No mock for command. To mock this command, add a mock for '$COMMAND' or a pattern like '\${COMMAND%% *} *'." >&${metaStream}
-                        builtin echo "You can also use sh.unmock('\${COMMAND%% *} *') to remove the mock for this command." >&${metaStream} 
-                    else
-                        builtin echo "No mock for command. To mock this command, add a mock for '$COMMAND'." >&${metaStream}
-                        builtin echo "You can also use sh.unmock('$COMMAND') to remove the mock for this command." >&${metaStream} 
-                    fi
-                    builtin exit 1
-            esac
-        }
-    `;
-    return {setupMockAllCommands, stopMockAllCommands, startMockAllCommands}
-}
-
-const sharedMocks: MockCommand[] = [];
+const sharedMocks = new MockManager();
 const shell = createShell({}, sharedMocks);
 const shellHushed = createShell(Object.assign({}, shell.options, {stdio: stdioHushed}), sharedMocks);
 const sh = Object.assign(
