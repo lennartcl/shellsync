@@ -78,7 +78,7 @@ describe("#printUploadResponse", () => {
 });
 
 describe("#singleUpload", () => {
-    it("uploads single files", () => {
+    it.skip("uploads single files", () => {
         sh.options.debug = true;
         sh.mock("command -v curl");
         getConfiguredUploadClient();

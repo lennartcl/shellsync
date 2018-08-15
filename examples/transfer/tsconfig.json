@@ -6,6 +6,7 @@
         "sourceMap": true,
         "moduleResolution": "node",
         "inlineSources": true,
+        "strict": false,
         "paths": {
             "*": [
                 "node_modules/*"

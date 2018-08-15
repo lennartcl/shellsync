@@ -1,11 +1,5 @@
 #!/usr/bin/env ts-node
 
-// TODO: insights
-// - uniform error handling, no || {echo; return 1}
-// - named parameters!
-// - no implicit global parameters like response
-// - quoting is safe; works with filenames with spaces
-
 import {sh, echo} from "shellsync";
 import * as fs from "fs";
 let configuredDownloadClient = "";
