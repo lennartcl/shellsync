@@ -1,8 +1,8 @@
 import * as assert from "assert";
-import {quote, unquoted} from "./index";
-import defaultExportSh from "./index";
-import {sh} from "./index";
-import {shh} from "./index";
+import {quote, unquoted} from "../src/index";
+import defaultExportSh from "../src/index";
+import {sh} from "../src/index";
+import {shh} from "../src/index";
 
 const stdioDefault = [0, "pipe", "inherit", "pipe", "pipe"];
 const consoleLog = console.log;
@@ -192,12 +192,12 @@ describe('#createShell', () => {
     });
     
     it('supports require("shellsync").sh', () => {
-        const sh = require("./index").sh;
+        const sh = require("../src/index").sh;
         sh `:`;
     });
     
     it('supports require("shellsync")', () => {
-        const sh = require("./index");
+        const sh = require("../src/index");
         sh `:`;
     });
     
