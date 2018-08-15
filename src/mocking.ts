@@ -7,6 +7,8 @@ import {MockCommand, ShellOptions} from "./types";
 const metaStream = 3;
 const mockStream = 4;
 
+type ValidatorFunction = (pattern: string) => void;
+
 export class MockManager {
     readonly mocks: MockCommand[] = [];
 
@@ -18,7 +20,7 @@ export class MockManager {
         this.mocks.splice(0, this.mocks.length);
     }
 
-    mock(pattern: string, command = "", validateCommandSyntax: (pattern: string) => void, options: ShellOptions) {
+    mock(pattern: string, command = "", validateCommandSyntax: ValidatorFunction, options: ShellOptions) {
         if (pattern.match(/^[\./]/))
             throw new Error("Unsupported mock pattern. To mock an external command like /bin/ls, call the command using 'command /bin/ls' and create a mock for 'command /bin/ls'");
         if (pattern.match(/([\\"')(\n\r\$!`&<>\$;]|\.\*)/))
@@ -40,7 +42,7 @@ export class MockManager {
         return mock.mock;
     }
 
-    unmock(pattern: string, validateCommandSyntax: (pattern: string) => void, options: ShellOptions) {
+    unmock(pattern: string, validateCommandSyntax: ValidatorFunction, options: ShellOptions) {
         if (!pattern.match(/^[A-Za-z0-9_$-]*\*?/))
             throw new Error("Unsupported unmock pattern: " + pattern);
         this.removeMock(pattern, true);
