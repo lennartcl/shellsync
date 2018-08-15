@@ -3,9 +3,9 @@
 Synchronous shell scripting for Node.js.
 
 * **Pragmatic**: automate tasks using synchronous code, using familiar commands from the command line.
-* **Powerful**: use JavaScript or TypeScript functions, modules, libraries, and for constructs like try/catch/finally.
-* **Robust**: use uninterruptable sections and harden your code with standard testing frameworks and mocking.
-* **Safe**: avoid most Bash pitfalls and use automatic, safe variable escaping.
+* **Powerful**: use JavaScript or TypeScript functions, modules, libraries, and constructs like try/catch/finally.
+* **Robust**: use [uninterruptable sections](#uninterruptable-sections) and harden your code with standard [testing frameworks and strong support for mocking](#writing-tests).
+* **Safe**: avoid most Bash pitfalls and use automatic, [safe variable escaping](#safe-variable-escaping).
 
 ## Usage
 
@@ -63,6 +63,8 @@ import {unquoted} from "shellsync";
 let command2 = "sudo apt-get install foo";
 sh`ls; ${unquoted(command2)}`; // ls; sudo apt-get install foo
 ```
+
+If you write your scripts using TypeScript with [`strictNullChecks`](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-0.html), undefined variables in shellsync invocations are reported as an error.
 
 ### Writing tests
 
@@ -171,7 +173,7 @@ sh`command4`;
 sh.handleSignalsEnd(); // end critical section
 ```
 
-Note that `sh.handleSignals()` affects both shell and Node.js code. If you're concerned your program won't end until the [heat death of the universe](https://en.wikipedia.org/wiki/Heat_death_of_the_universe) and need to offer Control-C as an early way out, you can also pass a timeout in milliseconds: `sh.handleSignals({timeout: 3000})`.
+Note that `sh.handleSignals()` affects both shell and Node.js code. If you're [concerned your program won't end](https://en.wikipedia.org/wiki/Termination_analysis) until the [heat death of the universe](https://en.wikipedia.org/wiki/Heat_death_of_the_universe) and need to offer Control-C as an early way out, you can also pass a timeout in milliseconds: `sh.handleSignals({timeout: 3000})`.
 
 ## API
 
@@ -279,3 +281,6 @@ MIT.
 * [shell-escape-tag](https://www.npmjs.com/package/shell-escape-tag) - Run shell commands with template strings and control over escaping
 * [any-shell-escape](https://www.npmjs.com/package/any-shell-escape) - Escape shell commands
 * [shelljs](https://www.npmjs.com/package/shelljs) - Portable implementation of Unix shell commands such as `echo` and `grep`
+* [shunit2](https://github.com/kward/shunit2) – unit testing for Bash
+* [bats](https://github.com/sstephenson/bats) – Bash automated testing system
+* [Wooledge Bash pitfalls](https://mywiki.wooledge.org/BashPitfalls) - Bash Pitfalls wiki page
