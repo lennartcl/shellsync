@@ -113,16 +113,16 @@ function script() {
 beforeEach(() => sh.mockAllCommands());
 
 // Mocha tests
-it("mocks git status", () => {
-    program(); // fails: no mock was defined for "git status"
+it("fails when no mocks are defined", () => {
+    program(); // FAILS: no mock was defined for "git status"
 });
 
-it("mocks git status", () => {
+it("runs with git status mocked", () => {
     sh.mock("git status");
     program(); // passes, returns ""
 });
 
-it("mocks git status", () => {
+it("runs with all git commands mocked", () => {
     sh.unmock("git *");
     program(); // passes, returns response of git status
 });
