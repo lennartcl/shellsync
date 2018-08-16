@@ -52,7 +52,7 @@ export class MockManager {
     }
 
     isMocked(name: string) {
-        this.mocks.find(m => m.name === name)
+        return this.mocks.find(m => m.name === name)
     }
 
     private removeMock(pattern: string, matchWithGlob: boolean) {

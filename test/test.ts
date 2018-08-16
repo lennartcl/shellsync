@@ -250,7 +250,7 @@ describe('#createShell', () => {
         assert.equal(sh`foo`, `foo`);
     });
 
-    it("supports mockRestore(mock)", () => {
+    it("supports unmock(mock)", () => {
         sh.mock("echo hello", "echo mock-1");
         sh.mock("echo *", "echo mock-2");
         assert.equal(sh`echo hello`, "mock-1");
@@ -259,14 +259,14 @@ describe('#createShell', () => {
         assert.equal(sh`echo bye`, "bye");
     });
 
-    it("supports mockRestore(mock) with shared state between sh and shh", () => {
+    it("supports unmock(mock) with shared state between sh and shh", () => {
         sh.mock("echo *", "echo mock-1");
         assert.equal(shh`echo hello`, "mock-1");
         sh.unmock("echo *");
         assert.equal(shh`echo hello`, "hello");
     });
 
-    it("supports mockRestore(mock) with mockAllCommand()", () => {
+    it("supports unmock(mock) with mockAllCommand()", () => {
         sh.mockAllCommands();
         sh.unmock("echo *");
         assert.equal(sh`echo hello`, "hello");
@@ -508,6 +508,15 @@ describe('#createShell', () => {
             next();
         };
         sh.echo`hello`;
+    });
+
+    it("supports mocking for echo``", (next) => {
+        sh.mock("echo *", "return 1");
+        try {
+            sh.echo`hello`;
+        } catch {
+            next();
+        }
     });
 
     it("correctly quotes for echo``", (next) => {
