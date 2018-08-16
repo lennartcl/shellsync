@@ -250,6 +250,10 @@ Run in debug mode, printing commands that are executed.
 
 The delimiter used for `sh.array`.
 
+### sh.options.preferLocal: boolean
+
+Whether to prefer executables installed in node_modules (using [npm-run-path](https://www.npmjs.com/package/npm-run-path)). Default `true`.
+
 ### sh(options): Shell
 
 Return a shell with specific options assigned. See `sh.options`. Example use:

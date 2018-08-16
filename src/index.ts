@@ -8,6 +8,7 @@ import {Shell, ShellFunction, MockCommand, ShellOptions, TemplateError, ShellPro
 import {existsSync} from "fs";
 import {handleSignals, handleSignalsEnd, parseEmittedSignal, wrapDisableInterrupts, isHandleSignalsActive} from "./signals";
 import {MockManager} from "./mocking";
+const npmRunPath = require("npm-run-path");
 const shellEscape = require("any-shell-escape");
 const bashBuiltinError = 2;
 const metaStream = 3;
@@ -27,7 +28,8 @@ function createShell(options: ShellOptions, mocks = new MockManager()): Shell {
     options.maxBuffer = options.maxBuffer || 10 * 1024 * 1024;
     options.stdio = options.stdio || stdioDefault;
     options.shell = options.shell || "/bin/bash";
-
+    options.preferLocal = options.preferLocal === undefined ? true : options.preferLocal;
+        
     const exec = (overrideOptions: ShellOptions, commands: TemplateStringsArray | TemplateError, ...commandVars: TemplateVar[]) => {
         let basicCommand = quote(commands, ...commandVars);
         let command = wrapShellCommand(basicCommand, options, mocks);
@@ -39,6 +41,8 @@ function createShell(options: ShellOptions, mocks = new MockManager()): Shell {
         const childOptions = Object.assign({}, options, overrideOptions) as SpawnSyncOptionsWithStringEncoding;
         if (childOptions.input != null)
             childOptions.stdio = ["pipe", ...childOptions.stdio.slice(1)];
+        if (options.preferLocal)
+            childOptions.env = Object.assign(npmRunPath.env(), childOptions.env);
 
         const child = child_process.spawnSync(options.shell!, ["-c", command], childOptions);
         const {output, stdout, stderr, status, error} = child;

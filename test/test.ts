@@ -3,6 +3,7 @@ import {quote, unquoted} from "../src/index";
 import defaultExportSh from "../src/index";
 import {sh} from "../src/index";
 import {shh} from "../src/index";
+import * as path from "path";
 
 const stdioDefault = [0, "pipe", "inherit", "pipe", "pipe"];
 const consoleLog = console.log;
@@ -516,6 +517,14 @@ describe('#createShell', () => {
             next();
         };
         sh.echo`it's all good`;
+    });
+
+    it("prefers locally installed executables", () => {
+        let p = process.env.path;
+        process.env.path = "/usr/bin";
+        let tsc = sh`which tsc`;
+        assert.equal(tsc, path.resolve(__dirname, "../node_modules/.bin/tsc"));
+        process.env.path = p;
     });
 });
 

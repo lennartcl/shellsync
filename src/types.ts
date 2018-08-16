@@ -71,6 +71,9 @@ export interface ShellOptions extends SpawnSyncOptions {
     /** Run in debug mode, printing commands that are executed. */
     debug?: boolean;
 
+    /** Whether to prefer executables installed in node_modules. Default `true`. */
+    preferLocal?: boolean;
+
     /**
      * Largest amount of data in bytes allowed on stdout or stderr. If exceeded, the child process is terminated.
      * Default: `10 * 1024 * 1024`.
