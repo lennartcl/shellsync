@@ -15,6 +15,7 @@
   "scripts": {
     "test": "ts-mocha test.ts",
     "test-watch": "ts-mocha --watch --watch-extensions ts test.ts",
-    "build": "tsc --outDir dist"
+    "build": "tsc --outDir dist",
+    "prepare": "npm run build"
   }
 }
