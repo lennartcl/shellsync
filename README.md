@@ -140,6 +140,7 @@ afterEach(() => sh.unmockAllCommands());
 Use `sh.options.debug` to trace all commands executed by your scripts or your mocks:
 
 ```javascript
+sh.options.debug = true;
 sh.mock("ls *", "echo ls was mocked");
 sh`cd /`;
 sh`ls -l`;
