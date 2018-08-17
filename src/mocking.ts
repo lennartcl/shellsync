@@ -56,7 +56,7 @@ export class MockManager {
     }
 
     private removeMock(pattern: string, matchWithGlob: boolean) {
-        let patternRegExp = new RegExp(pattern.replace(/\*/, ".*"));
+        let patternRegExp = new RegExp(pattern.replace(/\*/g, ".*").replace(/\[/g, "\\["));
         for (let i = this.mocks.length - 1; i >= 0; i--) {
             if (matchWithGlob ? this.mocks[i].pattern.match(patternRegExp) : this.mocks[i].pattern === pattern)
                 this.mocks.splice(i, 1);

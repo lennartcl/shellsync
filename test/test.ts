@@ -1,3 +1,7 @@
+/*----------------------------------------------------------------------------------------------
+ *  Copyright (c) Lennart C. L. Kats.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *----------------------------------------------------------------------------------------------*/
 import * as assert from "assert";
 import {quote, unquoted} from "../src/index";
 import defaultExportSh from "../src/index";
@@ -113,6 +117,7 @@ describe('#createShell', () => {
     afterEach(() => {
         console.log = consoleLog;
         console.error = consoleError;
+        sh.options.shell = "/bin/bash";
         sh.unmockAllCommands();
         sh.handleSignalsEnd();
     });
@@ -519,6 +524,11 @@ describe('#createShell', () => {
         }
     });
 
+    it("supports mocking [ -e ... ]", () => {
+        sh.mock("[ -e *", "echo it exists, trust me");
+        assert(sh`[ -e foo.txt ]`, "it exists, trust me");
+    });
+
     it("correctly quotes for echo``", (next) => {
         console.log = (output: string) => {
             console.log = consoleLog;
@@ -529,11 +539,11 @@ describe('#createShell', () => {
     });
 
     it("prefers locally installed executables", () => {
-        let p = process.env.PATH;
-        process.env.PATH = "/usr/bin";
+        let p = process.env.path;
+        process.env.path = "/usr/bin";
         let tsc = sh`which tsc`;
         assert.equal(tsc, path.resolve(__dirname, "../node_modules/.bin/tsc"));
-        process.env.PATH = p;
+        process.env.path = p;
     });
 });
 
