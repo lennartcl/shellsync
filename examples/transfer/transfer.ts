@@ -5,18 +5,18 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *----------------------------------------------------------------------------------------------*/
 
-import {sh, echo} from "shellsync";
+import {sh, echo, test} from "shellsync";
 let configuredDownloadClient = "";
 let configuredUploadClient = "";
 let currentVersion="1.22.0";
 
 /** This function determines which http get tool the system has installed and returns an error if there isnt one. */
 export function getConfiguredDownloadClient() {
-    if (sh.test`command -v curl`)
+    if (test`command -v curl`)
         configuredDownloadClient = "curl";
-    else if (sh.test`command -v wget`)
+    else if (test`command -v wget`)
         configuredDownloadClient="wget"
-    else if (sh.test`command -v fetch`)
+    else if (test`command -v fetch`)
         configuredDownloadClient="fetch"
     else
         throw new Error("Downloading with this tool requires either curl, wget, or fetch to be installed.");
@@ -34,9 +34,9 @@ export function httpGet(url) {
 
 /** This function determines which http get tool the system has installed and returns an error if there isnt one. */
 export function getConfiguredUploadClient() {
-    if (sh.test`command -v curl`)
+    if (test`command -v curl`)
         configuredUploadClient = "curl";
-    else if (sh.test`command -v wget`)
+    else if (test`command -v wget`)
         configuredUploadClient = "wget";
     else
         throw new Error("Uploading with this tool reqires either curl or wget to be installed.");
@@ -61,11 +61,11 @@ export function checkInternet() {
 }
 
 export function singleDownload(targetPath, path, file) {
-    if (!sh.test`[ -e ${targetPath} ]`) {
+    if (!test`[ -e ${targetPath} ]`) {
         echo`Directory doesn't exist, creating it now...`;
         sh`mkdir -p ${targetPath}`;
     }
-    if (sh.test`[ -e ${targetPath}/${file} ]`) {
+    if (test`[ -e ${targetPath}/${file} ]`) {
         echo`File aleady exists at ${targetPath}/${file}, do you want to delete it? [Y/n] `;
         const answer = sh`read -r; echo $REPLY`;
         if (!answer.match(/^[Yy]$/))
@@ -100,7 +100,7 @@ export function printOnetimeUpload(downlink) {
 
 export function singleUpload(sourcePath) {
     sourcePath = sourcePath.replace(/~/, process.env.HOME);
-    if (!sh.test`[ -e ${sourcePath} ]`) throw new Error("Invalid file path");
+    if (!test`[ -e ${sourcePath} ]`) throw new Error("Invalid file path");
     let filename = sourcePath.replace(/.*\\/, "");
     echo`Uploading ${filename}`;
     let response = httpSingleUpload(sourcePath, escape(filename));
@@ -133,6 +133,10 @@ Examples:
 `;
 }
 
+/**
+ * Option parsing & command handling: could be done with a npm module like yargs;
+ * here we'll stay close to the original and use process.argv.
+ */
 export function main(args) {
     let onetime = false;
     let down = false;
@@ -160,7 +164,7 @@ export function main(args) {
         default:
             for (let i = 0; i < args.length; i++) {
                 let file = args[i];
-                if (!sh.test`[ -e ${file} ]`) {
+                if (!test`[ -e ${file} ]`) {
                     if (/^-/.test(args[i])) usage();
                     else echo`File not found: ${args[i]}`;
                     process.exit(1);
