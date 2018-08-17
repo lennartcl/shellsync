@@ -75,8 +75,8 @@ export function singleDownload(targetPath, path, file) {
 export function httpSingleUpload(sourcePath, filename) {
     let response;
     switch (configuredUploadClient) {
-        case "curl": response = sh`curl -A curl --progress --upload-file ${sourcePath} "https://transfer.sh/${filename}`;
-        case "wget": response = sh`wget --progress=dot --method PUT --body-file=${sourcePath} "https://transfer.sh/${filename}`;
+        case "curl": response = sh`curl -A curl --progress --upload-file ${sourcePath} "https://transfer.sh/${filename}"`; break;
+        case "wget": response = sh`wget --progress=dot --method PUT --body-file=${sourcePath} "https://transfer.sh/${filename}"`; break;
         default: throw new Error("No upload client defined");
     }
     echo`Success!`;
