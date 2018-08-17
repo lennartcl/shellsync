@@ -27,15 +27,15 @@
   ],
   "dependencies": {
     "any-shell-escape": "^0.1.1",
-    "npm-run-path": "^2.0.2",
-    "ts-mocha": "^2.0.0"
+    "npm-run-path": "^2.0.2"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.44",
     "@types/node": "^8.5.1",
     "mocha": "^4.0.1",
     "ts-node": "^4.1.0",
-    "typescript": "^2.6.2"
+    "typescript": "^2.6.2",
+    "ts-mocha": "^2.0.0"
   },
   "scripts": {
     "build": "tsc --declaration --outDir dist && npm run build-sanity-check && npm run build-examples",
