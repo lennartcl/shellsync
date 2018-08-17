@@ -1,7 +1,11 @@
 #!/usr/bin/env ts-node
+/*----------------------------------------------------------------------------------------------
+ *  Original work copyright (c) Alexander Epstein.
+ *  Modified work copyright (c) Lennart C. L. Kats.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *----------------------------------------------------------------------------------------------*/
 
 import {sh, echo} from "shellsync";
-import * as fs from "fs";
 let configuredDownloadClient = "";
 let configuredUploadClient = "";
 let currentVersion="1.22.0";
@@ -57,11 +61,11 @@ export function checkInternet() {
 }
 
 export function singleDownload(targetPath, path, file) {
-    if (!fs.existsSync(`${targetPath}`)) {
+    if (!sh.test`[ -e ${targetPath} ]`) {
         echo`Directory doesn't exist, creating it now...`;
         sh`mkdir -p ${targetPath}`;
     }
-    if (fs.existsSync(`${targetPath}/${file}`)) {
+    if (sh.test`[ -e ${targetPath}/${file} ]`) {
         echo`File aleady exists at ${targetPath}/${file}, do you want to delete it? [Y/n] `;
         const answer = sh`read -r; echo $REPLY`;
         if (!answer.match(/^[Yy]$/))
@@ -69,7 +73,7 @@ export function singleDownload(targetPath, path, file) {
         sh`rm -f ${targetPath}/${file}`;
     }
     echo`Downloading ${file}`;
-    httpDownload(targetPath, path, file);
+    httpDownload(targetPath, path, escape(file));
     echo`Success!`;
 }
 
@@ -96,10 +100,10 @@ export function printOnetimeUpload(downlink) {
 
 export function singleUpload(sourcePath) {
     sourcePath = sourcePath.replace(/~/, process.env.HOME);
-    if (!fs.existsSync(sourcePath)) throw new Error("Invalid file path");
+    if (!sh.test`[ -e ${sourcePath} ]`) throw new Error("Invalid file path");
     let filename = sourcePath.replace(/.*\\/, "");
     echo`Uploading ${filename}`;
-    let response = httpSingleUpload(sourcePath, filename);
+    let response = httpSingleUpload(sourcePath, escape(filename));
     return {filename, response};
 }
 
@@ -156,7 +160,7 @@ export function main(args) {
         default:
             for (let i = 0; i < args.length; i++) {
                 let file = args[i];
-                if (!fs.statSync(file).isFile) {
+                if (!sh.test`[ -e ${file} ]`) {
                     if (/^-/.test(args[i])) usage();
                     else echo`File not found: ${args[i]}`;
                     process.exit(1);

@@ -5,6 +5,7 @@ import * as assert from "assert";
 beforeEach(() => {
     sh.mockAllCommands();
     sh.mock("echo *");
+    sh.unmock("[ -e *");
 });
 
 afterEach(() => sh.unmockAllCommands());
