@@ -4,7 +4,8 @@ This script closely follows the existing `transfer.sh` script from https://githu
 
 By using shellsync, the new code:
 * Has unit tests. Note how all file system/process operations were mocked out using `sh.mockAllCommands()`.
-* Supports for static checks using TypeScript.
-* Safely escapes variables; the original shell script was missing `""` around variables in many places, and breaks when used with file names containing spaces.
-* Has error handling with `try/catch`, avoiding `|| echo ...; return 1` repeating on many lines.
-* Has functions with paramter names: `function singleDownload(targetPath, path, file)` instead of Bash's `singleDownload() { ... $1 ... $2 ... $3 }`
+* Is statically checked using TypeScript.
+* Safely escapes variables. The original shell script was often missing `""` around variables, causing it to break when used with filenames containing spaces.
+* Uses JavaScript's builtin support for regexes instead of shelling out to `sed`.
+* Has simple error handling with `try/catch`. The original script repeated `|| echo ...; return 1` on many lines.
+* Has functions with parameter names: `function singleDownload(targetPath, path, file)`. The original script used Bash's `singleDownload() { ... $1 ... $2 ... $3 }`
