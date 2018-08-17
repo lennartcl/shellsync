@@ -150,7 +150,6 @@ while getopts "o:d:vh" opt; do
     v)  echo "Version $currentVersion"
       exit 0
     ;;
-    ;;
     o)
       onetime="true"
     ;;

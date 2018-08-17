@@ -529,11 +529,11 @@ describe('#createShell', () => {
     });
 
     it("prefers locally installed executables", () => {
-        let p = process.env.path;
-        process.env.path = "/usr/bin";
+        let p = process.env.PATH;
+        process.env.PATH = "/usr/bin";
         let tsc = sh`which tsc`;
         assert.equal(tsc, path.resolve(__dirname, "../node_modules/.bin/tsc"));
-        process.env.path = p;
+        process.env.PATH = p;
     });
 });
 

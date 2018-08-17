@@ -44,6 +44,7 @@ export function httpDownload(targetPath, path, file)  {
         case "curl": return sh`curl -A curl --progress -o "${targetPath}/${file}" "https://transfer.sh/${path}/${file}"`;
         case "wget": return sh`wget --progress=dot -O "${targetPath}/${file}" "https://transfer.sh/${path}/${file}"`;
         case "fetch": return sh`fetch -q -o "${targetPath}/${file}" "https://transfer.sh/${path}/${file}"`;
+        default: throw new Error("No configured download client");
     }
 }
 
@@ -112,27 +113,30 @@ export function usage() {
   echo`Transfer
 Description: Quickly transfer files from the command line.
 Usage: transfer [flags] or transfer [flag] [args] or transfer [filePathToUpload]
-  -d  Download a single file
-      First arg: Output file directory
-      Second arg: File url id
-      Third arg: File name
-  -o  Onetime file upload
-  -h  Show the help
-  -v  Get the tool version
+  -d       Download a single file
+           First arg: Output file directory
+           Second arg: File url id
+           Third arg: File name
+  -o       Onetime file upload
+  -h       Show the help
+  -v       Get the tool version
+  --debug  Show shellsync debug output
 Examples:
-  transfer ~/fileToTransfer.txt
-  transfer ~/firstFileToTransfer.txt ~/secondFileToTransfer.txt ~/thirdFileToTransfer.txt
-  transfer -d ~/outputDirectory fileID fileName
-  transfer -o ~/fileToTransfer.txt
+  transfer.ts ~/fileToTransfer.txt
+  transfer.ts ~/firstFileToTransfer.txt ~/secondFileToTransfer.txt ~/thirdFileToTransfer.txt
+  transfer.ts -d ~/outputDirectory fileID fileName
+  transfer.ts -o ~/fileToTransfer.txt
 `;
 }
 
 export function main(args) {
     let onetime = false;
     let down = false;
-    let arg = args[0];
-    if (!arg) usage();
-    switch (arg) {
+    if (!args[0]) return usage();
+    switch (args[0]) {
+        case "--debug":
+            sh.options.debug = true;
+            return main(args.slice(1));
         case "-v":
             echo`Version ${currentVersion}`;
             break;
@@ -140,20 +144,21 @@ export function main(args) {
             getConfiguredDownloadClient();
             if (configuredDownloadClient !== "curl")
                 throw new Error("curl must be installed to use one time file upload");
-            let {downlink} = onetimeUpload(process.argv[2]);
+            let {downlink} = onetimeUpload(args[1]);
             printOnetimeUpload(downlink);
             break;
         case "-d":
-            if (process.argv.length < 5) { echo`Error: not enough arguments for downloading a file, see the usage`; process.exit(1); }
-            if (process.argv.length > 5) { echo`Error: too many arguments for downloading a file, see the usage`; process.exit(1); }
-            singleDownload(process.argv[2], process.argv[3], process.argv[4]);
+            if (args.length < 4) { echo`Error: not enough arguments for downloading a file, see the usage`; process.exit(1); }
+            if (args.length > 4) { echo`Error: too many arguments for downloading a file, see the usage`; process.exit(1); }
+            getConfiguredDownloadClient();
+            singleDownload(args[1], args[2], args[3]);
             break;
         default:
-            for (let i = 1; i < process.argv.length; i++) {
-                let file = process.argv[i];
+            for (let i = 0; i < args.length; i++) {
+                let file = args[i];
                 if (!fs.statSync(file).isFile) {
-                    if (/^-/.test(arg)) usage();
-                    else echo`File not found: ${arg}`;
+                    if (/^-/.test(args[i])) usage();
+                    else echo`File not found: ${args[i]}`;
                     process.exit(1);
                 }
                 getConfiguredDownloadClient();
@@ -167,4 +172,4 @@ export function main(args) {
 }
 
 const isTesting = typeof (global as any).it === 'function';
-if (!isTesting) main(process.argv);
+if (!isTesting) main(process.argv.slice(2));
