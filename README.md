@@ -2,10 +2,10 @@
 
 Synchronous shell scripting for Node.js.
 
-* **Pragmatic**: automate tasks using synchronous code, using familiar commands from the command line.
-* **Powerful**: use JavaScript or TypeScript functions, modules, libraries, and constructs like try/catch/finally.
-* **Robust**: use [uninterruptable sections](#uninterruptable-sections) and harden your code with standard [testing frameworks and strong support for mocking](#writing-tests).
+* **Pragmatic**: automate tasks using synchronous code, using familiar shell commands.
+* **Powerful**: combine the shell world with functions, modules, libraries, try/catch/finally, regular expressions, and so on, from JavaScript or TypeScript.
 * **Safe**: avoid most Bash pitfalls and use automatic, [safe variable escaping](#safe-variable-escaping).
+* **Robust**: use [uninterruptable sections](#uninterruptable-sections) and harden your code with standard [testing frameworks and strong support for mocking](#writing-tests).
 
 ## Usage
 
@@ -135,6 +135,10 @@ Finally, `sh.unmockAllCommands()` restores all mocked commands to the original s
 afterEach(() => sh.unmockAllCommands());
 ```
 
+Under the hood, shellsync implements mocking by defining shell functions for mocked commands
+(e.g., `git() { ... }`) and using a [`DEBUG` trap](https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-trap)
+to intercept unmocked commands for `sh.mockAllCommands()`. 
+
 ### Debugging
 
 Use `sh.options.debug` to trace all commands executed by your scripts or your mocks:
@@ -144,6 +148,7 @@ sh.options.debug = true;
 sh.mock("ls *", "echo ls was mocked");
 sh`cd /`;
 sh`ls -l`;
+
 // Prints:
 // + cd /
 // + ls -l
