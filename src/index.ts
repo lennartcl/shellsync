@@ -246,8 +246,8 @@ function wrapShellCommand(command: string, options: ShellOptions, mocks: MockMan
         ${stopDebugTrace}
 
         # Capture current directory
-        builtin command printf "$PWD">&${metaStream}
-        builtin exit $RET
+        printf "$PWD">&${metaStream}
+        exit $RET
     `;
 }
 

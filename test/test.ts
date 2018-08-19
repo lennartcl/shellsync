@@ -346,6 +346,25 @@ describe('#createShell', () => {
         sh.mock("command -v curl", "echo ok");
         assert.equal(sh`command -v curl`, "ok");
     });
+    
+    it('supports an edge-case mocks with printf', () => {
+        sh.mock("printf *", "exit 1");
+        assert.equal(sh`echo ok`, "ok");
+    });
+    
+    it('supports an edge-case mocks with printf in dash', () => {
+        sh.options.shell = "dash";
+        sh.mock("printf *", "exit 1");
+        assert.equal(sh`echo ok`, "ok");
+    });
+    
+    it('disallows mocking exit', (next) => {
+        try {
+            sh.mock("exit 1", "exit 0");
+        } catch {
+            next();
+        }
+    });
 
     it("can keep track of calls to mocks", () => {
         let mockHello = sh.mock("hello");
@@ -491,16 +510,45 @@ describe('#createShell', () => {
         shh.out``;
     });
 
-    it("supports /bin/sh", () => {
-        sh.options.shell = "/bin/sh";
+    it("supports dash", () => {
+        sh.options.shell = "dash";
         const output = sh`echo works`;
         sh`echo still works`;
         assert.equal(output, "works");
     });
 
-    it("supports /bin/sh with handleSignals()", () => {
+    it("supports dash with mocks", () => {
+        sh.options.shell = "dash";
+        sh.mock("ping", "echo pong");
+        const output = sh`ping`;
+        assert.equal(output, "pong");
+    });
+
+    it("supports dash with handleSignals()", () => {
         sh.handleSignals();
-        sh.options.shell = "/bin/sh";
+        sh.options.shell = "dash";
+        const output = sh`echo works`;
+        sh`echo still works`;
+        assert.equal(output, "works");
+    });
+
+    it("supports zsh", () => {
+        sh.options.shell = "/bin/zsh";
+        const output = sh`echo works`;
+        sh`echo still works`;
+        assert.equal(output, "works");
+    });
+
+    it("supports zsh with mocks", () => {
+        sh.options.shell = "/bin/zsh";
+        sh.mock("ping", "echo pong");
+        const output = sh`ping`;
+        assert.equal(output, "pong");
+    });
+
+    it("supports zsh with handleSignals()", () => {
+        sh.handleSignals();
+        sh.options.shell = "/bin/zsh";
         const output = sh`echo works`;
         sh`echo still works`;
         assert.equal(output, "works");
@@ -526,7 +574,7 @@ describe('#createShell', () => {
 
     it("supports mocking [ -e ... ]", () => {
         sh.mock("[ -e *", "echo it exists, trust me");
-        assert(sh`[ -e foo.txt ]`, "it exists, trust me");
+        assert.equal(sh`[ -e foo.txt ]`, "it exists, trust me");
     });
 
     it("correctly quotes for echo``", (next) => {
@@ -598,6 +646,16 @@ describe("#mockAllCommands", () => {
         sh.mockAllCommands();
         sh.mock("ls");
         sh`ls`;
+    });
+
+    it("supports mocks in subshells", () => {
+        sh.mock("bling", "echo bling bling");
+        assert.equal(sh`(bling)`, "bling bling");
+    });
+
+    it("supports mocks in functions", () => {
+        sh.mock("bling", "echo bling bling");
+        assert.equal(sh`fn() { bling; }; fn`, "bling bling");
     });
 
     it("prints minimal output when debug and mocking are used together", (next) => {

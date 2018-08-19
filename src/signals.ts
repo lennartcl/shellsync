@@ -91,7 +91,7 @@ export function wrapDisableInterrupts(script: string) {
         while true; do
             wait $CHILD_PID
             RET=$?
-            if [[ $TRAPPED ]]; then
+            if [ "$TRAPPED" ]; then
                 TRAPPED=
             else
                 exit $RET

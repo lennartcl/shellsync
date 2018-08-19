@@ -27,6 +27,8 @@ export class MockManager {
             throw new Error("Unsupported character sequence in pattern: " + RegExp.$1);
         if (pattern.match(/^\w*\*\w*/))
             throw new Error("Pattern matching in first word is not supported: " + pattern);
+        if (pattern.match(/^(builtin|unset|exit)\b/))
+            throw new Error("Pattern not supported: " + pattern);
         const mock = {
             name: pattern.split(" ")[0],
             pattern,
@@ -80,7 +82,7 @@ export class MockManager {
                     ${m.patternEscaped})
                         builtin shift;
                         (   ${m.name}() { builtin command ${m.name} "$@"; }
-                             builtin printf '\\0${m.pattern}\\0' >&${mockStream}
+                            builtin printf '\\0${m.pattern}\\0' >&${mockStream}
                             ${startDebugTrace}
                             : mock for ${m.name} :
                             ${m.command}
@@ -89,18 +91,20 @@ export class MockManager {
                 *) builtin command "$@" ;;
                 esac
             }
-            export -f __execMock
 
             # Functions to intercept mocked commands
             ${this.mocks.map(m => `
                 ${m.name}() { ${stopDebugTrace}; __execMock ${m.name} "$@"; }
-                builtin export -f ${m.name}
             `).join("\n")}
         `;
-        if (this.mockAllCommandsEnabled) defineMocks += `
+        let endMocks = this.mocks.length ? `{ unset -f printf; } 2>/dev/null` : ``;
+        if (!this.mockAllCommandsEnabled)
+            return {defineMocks, endMocks};
+        
+        defineMocks += `
             __mockAllCommands() {
-                local COMMAND=\${BASH_COMMAND-$3}
-                if [[ $COMMAND =~ ^(builtin|return|exit|[{]|RET=\\$?|:$) ]]; then
+                local COMMAND=$BASH_COMMAND
+                if [[ $COMMAND =~ ^(builtin|return|exit|unset|export|RET=\\$?|:$) ]]; then
                     return
                 fi
                 case "$COMMAND" in
@@ -130,7 +134,7 @@ export class MockManager {
             }
             builtin trap "${stopDebugTrace}; __mockAllCommands; ${startDebugTrace}" DEBUG
         `;
-        const endMocks = `
+        endMocks += `
             { builtin trap - DEBUG; } 2>/dev/null
         `;
         return {defineMocks, endMocks}
