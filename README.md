@@ -5,7 +5,19 @@ Synchronous shell scripting for Node.js.
 * **Pragmatic**: automate tasks using synchronous code, using familiar shell commands.
 * **Powerful**: combine the shell world with functions, modules, libraries, try/catch/finally, regular expressions, and so on, from JavaScript or TypeScript.
 * **Safe**: avoid most Bash pitfalls and use automatic, [safe variable escaping](#safe-variable-escaping).
-* **Robust**: use [uninterruptable sections](#uninterruptable-sections) and harden your code with standard [testing frameworks and strong support for mocking](#writing-tests).
+* **Robust**: use [uninterruptable sections](#uninterruptable-sections) and harden your code with [standard testing frameworks and strong support for mocking](#writing-tests).
+
+## Overview
+
+- [Usage](#usage)
+  - [Safe Variable Escaping](#safe-variable-escaping)
+  - [Writing Tests](#writing-tests)
+  - [Debugging](#debugging)
+  - [Uninterruptable Sections](#uninterruptable-sections)
+- [Examples](#examples)
+- [API](#api)
+- [License](#api)
+- [See Also](#api)
 
 ## Usage
 
@@ -45,7 +57,7 @@ shh`git init`;             // git init (no output printed)
 sh.out`echo "SHOUTING!"`;  // print "SHOUTING!" to stdout
 ```
 
-### Safe variable escaping
+### Safe Variable Escaping
 
 > _"The vast majority of [shell scripting] pitfalls are in some way related to unquoted expansions"_ – [Bash Pitfalls wiki](https://mywiki.wooledge.org/BashPitfalls)
 
@@ -66,7 +78,7 @@ sh`ls; ${unquoted(command2)}`; // ls; sudo apt-get install foo
 
 If you write your scripts using TypeScript with [`strictNullChecks`](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-0.html), undefined variables in shellsync invocations are reported as an error.
 
-### Writing tests
+### Writing Tests
 
 > _"I find that writing unit tests actually increases my programming speed."_ – Martin Fowler
 
@@ -157,7 +169,7 @@ sh`ls -l`;
 // ls was mocked
 ```
 
-### Uninterruptable sections
+### Uninterruptable Sections
 
 > _"Please do not interrupt me while I'm ignoring you"_ – unknown author
 
@@ -180,6 +192,10 @@ sh.handleSignalsEnd(); // end critical section
 ```
 
 Note that `sh.handleSignals()` affects both shell and Node.js code. If you're [concerned your program won't end](https://en.wikipedia.org/wiki/Termination_analysis) until the [heat death of the universe](https://en.wikipedia.org/wiki/Heat_death_of_the_universe) and need to offer Control-C as an early way out, you can also pass a timeout in milliseconds: `sh.handleSignals({timeout: 3000})`.
+
+## Examples
+
+See [`/examples`](https://github.com/lennartcl/shellsync/tree/master/examples/).
 
 ## API
 
@@ -285,7 +301,7 @@ Indicates how often this mock was called.
 
 MIT.
 
-## See also
+## See Also
 
 * [shell-tag](https://www.npmjs.com/package/shell-tag) - Run shell commands with template strings
 * [shell-escape-tag](https://www.npmjs.com/package/shell-escape-tag) - Run shell commands with template strings and control over escaping
