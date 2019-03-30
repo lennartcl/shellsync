@@ -1,6 +1,10 @@
-import {sh} from "shellsync";
-import {getConfiguredDownloadClient, httpDownload, singleDownload, printUploadResponse, singleUpload, getConfiguredUploadClient} from "./transfer";
-import * as assert from "assert";
+/*----------------------------------------------------------------------------------------------
+ *  Copyright (c) Lennart C. L. Kats.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *----------------------------------------------------------------------------------------------*/
+const {sh} = require("shellsync");
+const {getConfiguredDownloadClient, httpDownload, singleDownload, printUploadResponse, singleUpload, getConfiguredUploadClient} = require("./transfer");
+const assert = require("assert");
 
 beforeEach(() => {
     sh.mockAllCommands();
@@ -83,6 +87,6 @@ describe("#singleUpload", () => {
         sh.mock("command -v curl");
         sh.mock("curl -A * --upload-file *");
         getConfiguredUploadClient();
-        singleUpload(__dirname + "/test.ts");
+        singleUpload(__dirname + "/test.js");
     });
 });

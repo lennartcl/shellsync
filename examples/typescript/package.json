@@ -4,13 +4,17 @@
   "description": "",
   "main": "index.js",
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
-    "mocha": "^5.2.0",
     "shellsync": "^0.2.0",
-    "ts-mocha": "^2.0.0",
     "ts-node": "^7.0.0",
     "typescript": "^3.0.1"
+  },
+  "devDependencies": {
+    "mocha": "^5.2.0",
+    "ts-mocha": "^2.0.0",
+    "@types/mocha": "^5.2.6",
+    "@types/node": "^11.12.2"
   },
   "scripts": {
     "test": "ts-mocha test.ts",
