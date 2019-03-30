@@ -28,11 +28,11 @@
   ],
   "dependencies": {
     "any-shell-escape": "^0.1.1",
+    "@types/node": "^8.5.1",
     "npm-run-path": "^2.0.2"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.44",
-    "@types/node": "^8.5.1",
     "mocha": "^4.0.1",
     "ts-node": "^4.1.0",
     "typescript": "^2.6.2",
