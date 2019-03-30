@@ -1,6 +1,6 @@
 {
   "name": "shellsync",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "main": "dist/index.js",
   "license": "MIT",
   "author": "Lennart Kats <postcards add lennart.cl>",
@@ -40,10 +40,10 @@
   },
   "scripts": {
     "build": "tsc --declaration --outDir dist && npm run build-sanity-check && npm run build-examples",
-    "build-examples": "npm link && cd examples/transfer && npm link shellsync && npm run build",
+    "build-examples": "(cd examples/typescript && npm ci) && (cd examples/javascript && npm ci)",
     "build-sanity-check": "tsc --declaration dist/index.d.ts",
     "test": "ts-mocha test/* examples/*/test*",
     "test-watch": "ts-mocha --watch --watch-extensions ts test/* examples/*/test*",
-    "prepublishOnly": "npm run build && npm run test"
+    "prepare": "npm run build && npm run test"
   }
 }
