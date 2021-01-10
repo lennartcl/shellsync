@@ -65,7 +65,7 @@ shellsync safely quotes variables automatically:
 
 ```javascript
 let filename = "filename with spaces.txt";
-sh`echo "hello" > cat ${filename}`; // write to filename\ with\ spaces.txt
+sh`echo "hello" > ${filename}`; // write to filename\ with\ spaces.txt
 ```
 
 Use `unquoted()` to disable automatic quoting:
@@ -112,7 +112,7 @@ it("mocks arbitrary git command", () => {
 ```
 
 It's a good habit to mock out all shell commands that have side effects.
-Use `sh.mockAllCommmands()` to ensure a mock exists _all_ shell commands.
+Use `sh.mockAllCommands()` to ensure a mock exists _all_ shell commands.
 You can then selectively add mocks or use `sh.unmock(pattern)` to unmock command:
 
 ```javascript
